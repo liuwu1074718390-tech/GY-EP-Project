@@ -1,0 +1,1135 @@
+{
+  "id": "p1",
+  "name": "南站水厂项目",
+  "stages": [
+    {
+      "id": "s1",
+      "projectId": "p1",
+      "name": "提升泵及配套设备",
+      "materials": [
+        {
+          "id": "m1",
+          "stageId": "s1",
+          "name": "提升水泵",
+          "specification": "潜污泵，Q=2083m3/h，H=9.5m，N=75kW，带变频控制、导轨及自耦系统",
+          "unit": "台",
+          "basePrice": 499774.19
+        },
+        {
+          "id": "m2",
+          "stageId": "s1",
+          "name": "提升水泵",
+          "specification": "潜污泵，Q=1041m3/h，H=9.5m，N=37kW，带变频控制、导轨及自耦系统",
+          "unit": "台",
+          "basePrice": 351894.38
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "projectId": "p1",
+      "name": "内进流格栅除污机及其配套设备",
+      "materials": [
+        {
+          "id": "m3",
+          "stageId": "s2",
+          "name": "细格栅",
+          "specification": "内进流孔板式格栅，渠宽1.5m，栅隙5mm，N=0.75kW，单台过水量≥2100m3/h，主体不锈钢",
+          "unit": "台",
+          "basePrice": 601274.44
+        },
+        {
+          "id": "m4",
+          "stageId": "s2",
+          "name": "螺旋压榨机",
+          "specification": "过滤精度3mm， N=2.2kW",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m5",
+          "stageId": "s2",
+          "name": "输渣管",
+          "specification": "与格栅系统配套，长度≈12m，不锈钢材质，含支腿及观察口",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m6",
+          "stageId": "s2",
+          "name": "冲洗泵组",
+          "specification": "立式多级泵组，单泵Q=8m³/h，H=81m，N=3kW，带变频控制、进口过滤器",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m7",
+          "stageId": "s2",
+          "name": "储水箱",
+          "specification": "不锈钢方形水箱，V=12m3，含成套冲洗水管路控制阀门、接头、过滤器、仪表等",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m8",
+          "stageId": "s2",
+          "name": "膜格栅",
+          "specification": "内进流孔板式格栅，渠宽1.6m，栅隙1mm，N=2.2kW ，网板宽度1800mm，单台过水量≥1580m3/h",
+          "unit": "台",
+          "basePrice": 734485.42
+        },
+        {
+          "id": "m9",
+          "stageId": "s2",
+          "name": "螺旋压榨机",
+          "specification": "过滤精度2mm，N=3kW",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m10",
+          "stageId": "s2",
+          "name": "输渣管",
+          "specification": "与格栅系统配套，长度≈16m，不锈钢材质，含支腿及观察口",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m11",
+          "stageId": "s2",
+          "name": "恒压冲洗泵组",
+          "specification": "立式多级泵组，单泵Q=30m³/h，H=80m，N=11kW，带变频控制、进口过滤器",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m12",
+          "stageId": "s2",
+          "name": "储水箱",
+          "specification": "不锈钢方形水箱，V=12m3，含成套冲洗水管路控制阀门、接头、过滤器、仪表等",
+          "unit": "个",
+          "basePrice": 100000
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "projectId": "p1",
+      "name": "立式搅拌器及配套设备",
+      "materials": [
+        {
+          "id": "m13",
+          "stageId": "s3",
+          "name": "厌氧搅拌器",
+          "specification": "不锈钢立式搅拌器，D=4m，N=4kW，带变频控制，缺氧Ⅰ",
+          "unit": "台",
+          "basePrice": 94464.7
+        },
+        {
+          "id": "m14",
+          "stageId": "s3",
+          "name": "缺氧搅拌器",
+          "specification": "不锈钢立式搅拌器，D=4.2m，N=7.5kW，带变频控制，缺氧Ⅱ",
+          "unit": "套",
+          "basePrice": 107092.8
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "projectId": "p1",
+      "name": "潜水推流器及配套设备",
+      "materials": [
+        {
+          "id": "m15",
+          "stageId": "s4",
+          "name": "缺氧推流器",
+          "specification": "不锈钢低速推流器，N=15kW",
+          "unit": "台",
+          "basePrice": 120167.6
+        }
+      ]
+    },
+    {
+      "id": "s5",
+      "projectId": "p1",
+      "name": "MBR膜池工艺系统及配套设备（50%）",
+      "materials": [
+        {
+          "id": "m16",
+          "stageId": "s5",
+          "name": "膜组器系统",
+          "specification": "PVDF中空纤维膜组器,单渠道出水量Q≥9375m3/d,组器框架不锈钢材质,含产水、曝气接头等,每个渠道含8套膜组器",
+          "unit": "台",
+          "basePrice": 33055670.58
+        },
+        {
+          "id": "m17",
+          "stageId": "s5",
+          "name": "进水闸门",
+          "specification": "不锈钢附壁方闸门，B×H=1000×1000mm，N=0.75kW，带手电一体启闭机",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m18",
+          "stageId": "s5",
+          "name": "出水闸门",
+          "specification": "不锈钢附壁方闸门，B×H=1000×1000mm，N=0.75kW，带手电一体启闭机",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m19",
+          "stageId": "s5",
+          "name": "电动葫芦",
+          "specification": "起重量5T，起吊高度12m，行程约340m，N=0.8×2+7.5kW",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m20",
+          "stageId": "s5",
+          "name": "产水泵",
+          "specification": "卧式离心泵，Q=481m3/h，H=20m，N=37kW，汽蚀余量≤3m，带变频控制",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m21",
+          "stageId": "s5",
+          "name": "产水专用设备",
+          "specification": "Φ500×1100mm，SS316材质，每套含2个音叉液位计",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m22",
+          "stageId": "s5",
+          "name": "CIP泵",
+          "specification": "卧式离心泵，Q=251m3/h,H=12m,N=15kW，带变频控制",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m23",
+          "stageId": "s5",
+          "name": "液环真空泵",
+          "specification": "Q=165m3/h，最大真空度84%，N=4kW",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m24",
+          "stageId": "s5",
+          "name": "真空罐",
+          "specification": "V=1m3，Φ800×2400mm",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m25",
+          "stageId": "s5",
+          "name": "气水分离罐",
+          "specification": "V=0.12m3，φ500×780mm",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m26",
+          "stageId": "s5",
+          "name": "空压机",
+          "specification": "螺杆式空压机，Q=1.0m3/min，P=0.80MPa，N=7.5kW",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m27",
+          "stageId": "s5",
+          "name": "冷干机",
+          "specification": "Q=1.5m3/min，N=0.55kW",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m28",
+          "stageId": "s5",
+          "name": "储气罐",
+          "specification": "V=1m3，工作压力0.8MPa",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m29",
+          "stageId": "s5",
+          "name": "剩余污泥泵",
+          "specification": "无堵塞卧式离心泵，Q=65m3/h，H=20m，N=11kW",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m30",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN300,1.0MPa,阀板:铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m31",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN300,1.0MPa,阀板:铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m32",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN250,1.0MPa,阀体阀板：UPVC",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m33",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN250,1.0MPa,阀体阀板：UPVC",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m34",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN150,1.0MPa,阀板:铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m35",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN150,1.0MPa,阀板:铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m36",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN150,1.0MPa,阀板:铸铁（图纸的材质UPVC）",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m37",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN125,1.0MPa,阀板:SS316",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m38",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN100,1.0MPa,阀板:铸铁，涡轮式",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m39",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN50,1.0MPa，阀板:铸铁，涡轮式",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m40",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN200,1.0MPa,阀体阀板：UPVC",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m41",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN200,1.0MPa,阀体阀板：铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m42",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN80,1.0MPa,阀体阀板：铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m43",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN150,1.0MPa,阀体阀板：铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m44",
+          "stageId": "s5",
+          "name": "手动对夹式蝶阀",
+          "specification": "DN50,1.0MPa,阀板:铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m45",
+          "stageId": "s5",
+          "name": "球阀",
+          "specification": "DN20,1.0MPa，铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m46",
+          "stageId": "s5",
+          "name": "球阀",
+          "specification": "DN50,1.0MPa，PVC-U",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m47",
+          "stageId": "s5",
+          "name": "球阀",
+          "specification": "DN15,1.0MPa，铜",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m48",
+          "stageId": "s5",
+          "name": "球阀",
+          "specification": "DN20,1.0MPa，PVC-U",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m49",
+          "stageId": "s5",
+          "name": "自动排气阀",
+          "specification": "DN15,1.0MPa",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m50",
+          "stageId": "s5",
+          "name": "对夹式止回阀",
+          "specification": "DN300,1.0MPa,阀板:铸铁，碟片式",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m51",
+          "stageId": "s5",
+          "name": "对夹式止回阀",
+          "specification": "DN250,1.0MPa,阀板:SS316",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m52",
+          "stageId": "s5",
+          "name": "对夹式止回阀",
+          "specification": "DN150,1.0MPa,阀板:铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m53",
+          "stageId": "s5",
+          "name": "对夹式止回阀",
+          "specification": "DN80,1.0MPa,阀板:铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m54",
+          "stageId": "s5",
+          "name": "对夹式止回阀",
+          "specification": "DN50,1.0MPa,阀板:铸铁",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m55",
+          "stageId": "s5",
+          "name": "单球体橡胶接头",
+          "specification": "DN350",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m56",
+          "stageId": "s5",
+          "name": "单球体橡胶接头",
+          "specification": "DN300",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m57",
+          "stageId": "s5",
+          "name": "单球体橡胶接头",
+          "specification": "DN300",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m58",
+          "stageId": "s5",
+          "name": "单球体橡胶接头",
+          "specification": "DN250",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m59",
+          "stageId": "s5",
+          "name": "单球体橡胶接头",
+          "specification": "DN150",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m60",
+          "stageId": "s5",
+          "name": "单球体橡胶接头",
+          "specification": "DN150",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m61",
+          "stageId": "s5",
+          "name": "单球体橡胶接头",
+          "specification": "DN80",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m62",
+          "stageId": "s5",
+          "name": "单球体橡胶接头",
+          "specification": "DN50",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m63",
+          "stageId": "s5",
+          "name": "管道混合器",
+          "specification": "DN250,PVC-U",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m64",
+          "stageId": "s5",
+          "name": "Y型过滤器",
+          "specification": "DN250,30目,1.0MPa，PVC-U",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m65",
+          "stageId": "s5",
+          "name": "Y型过滤器",
+          "specification": "DN80,30目,1.0MPa，Q235",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m66",
+          "stageId": "s5",
+          "name": "Y型过滤器",
+          "specification": "DN20,30目,1.0MPa，PVC-U",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m67",
+          "stageId": "s5",
+          "name": "单法兰管道限位伸缩接头",
+          "specification": "DN700",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m68",
+          "stageId": "s5",
+          "name": "快速接头",
+          "specification": "DN100，SS304，含一个法兰",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m69",
+          "stageId": "s5",
+          "name": "快速接头",
+          "specification": "DN125，SS316，含一个法兰",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m70",
+          "stageId": "s5",
+          "name": "气动三偏心蝶阀",
+          "specification": "DN80",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m71",
+          "stageId": "s5",
+          "name": "气动三偏心蝶阀",
+          "specification": "DN200",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m72",
+          "stageId": "s5",
+          "name": "气动三偏心蝶阀",
+          "specification": "DN150",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m73",
+          "stageId": "s5",
+          "name": "气动三偏心蝶阀",
+          "specification": "DN125",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m74",
+          "stageId": "s5",
+          "name": "气动三偏心蝶阀",
+          "specification": "DN100",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m75",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN100",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m76",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN125",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m77",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN150",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m78",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN20",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m79",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN25",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m80",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN40",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m81",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN65",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m82",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN80",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m83",
+          "stageId": "s5",
+          "name": "电动调节阀",
+          "specification": "DN80",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m84",
+          "stageId": "s5",
+          "name": "气动法兰式蝶阀",
+          "specification": "DN250，PN10，CIP管",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m85",
+          "stageId": "s5",
+          "name": "气动对夹式蝶阀",
+          "specification": "DN150，PN10，剩余污泥总管",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m86",
+          "stageId": "s5",
+          "name": "气动对夹式蝶阀",
+          "specification": "DN80，PN10，产水专用设备抽真空",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m87",
+          "stageId": "s5",
+          "name": "气动对夹式蝶阀",
+          "specification": "DN80，PN10，真空罐进口",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m88",
+          "stageId": "s5",
+          "name": "气动对夹式蝶阀",
+          "specification": "DN50，PN10，真空罐排水",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m89",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN20，PN10，真空罐排气",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m90",
+          "stageId": "s5",
+          "name": "气动球阀",
+          "specification": "DN15，PN10，气水分离罐补水",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m91",
+          "stageId": "s5",
+          "name": "电磁阀",
+          "specification": "DN20，PN10，储气罐排污",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m92",
+          "stageId": "s5",
+          "name": "气动对夹式蝶阀",
+          "specification": "DN350，PN10，产水干管",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m93",
+          "stageId": "s5",
+          "name": "气动对夹式蝶阀",
+          "specification": "DN300，PN10，吹扫干管",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m94",
+          "stageId": "s5",
+          "name": "气动对夹式蝶阀",
+          "specification": "DN300,PN10, 清水池补水管",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m95",
+          "stageId": "s5",
+          "name": "在线MLSS仪",
+          "specification": "量程0~20g/L，输出信号4~20mA",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m96",
+          "stageId": "s5",
+          "name": "静压式液位计",
+          "specification": "量程0～5m，输出信号4～20mA",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m97",
+          "stageId": "s5",
+          "name": "压力变送器",
+          "specification": "量程－100～200kPa，输出信号4～20mA，一体式",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m98",
+          "stageId": "s5",
+          "name": "电磁流量计",
+          "specification": "DN300，量程0～750m3/h，橡胶衬里，不锈钢电极，输出信号4～20mA，1.0MPa，分体式",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m99",
+          "stageId": "s5",
+          "name": "在线浊度仪",
+          "specification": "量程0～20NTU，输出信号4～20mA，分体式",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m100",
+          "stageId": "s5",
+          "name": "电磁流量计",
+          "specification": "DN250，量程0～350m3/h，橡胶衬里,不锈钢电极，输出信号4～20mA，1.0MPa，分体式",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m101",
+          "stageId": "s5",
+          "name": "音叉液位计",
+          "specification": "双叉标准型，螺纹连接",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m102",
+          "stageId": "s5",
+          "name": "液位计",
+          "specification": "测量范围0～4m，介质：NaClO，输出信号4～20mA",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m103",
+          "stageId": "s5",
+          "name": "液位计",
+          "specification": "测量范围0～4m，介质：柠檬酸，输出信号4～20mA",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m104",
+          "stageId": "s5",
+          "name": "电磁流量计",
+          "specification": "DN50，量程0～10m3/h，四氟衬里，钛电极，输出信号4～20mA，1.0MPa，分体式",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m105",
+          "stageId": "s5",
+          "name": "电磁流量计",
+          "specification": "DN50，量程0～10m3/h，四氟衬里，钽电极，输出信号4～20mA，1.0MPa，分体式",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m106",
+          "stageId": "s5",
+          "name": "电磁流量计",
+          "specification": "DN150，量程0～100m3/h，橡胶衬里,不锈钢电极，输出信号4～20mA，1.0MPa，分体式",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m107",
+          "stageId": "s5",
+          "name": "普通压力表",
+          "specification": "0~1.0MPa",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m108",
+          "stageId": "s5",
+          "name": "浮球液位计",
+          "specification": "0~1m",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m109",
+          "stageId": "s5",
+          "name": "低压进线柜",
+          "specification": "1000(宽)*2200(高)*1000(深)，MNS",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m110",
+          "stageId": "s5",
+          "name": "低压母联柜",
+          "specification": "1000(宽)*2200(高)*1000(深)，MNS",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m111",
+          "stageId": "s5",
+          "name": "有源滤波柜",
+          "specification": "200A",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m112",
+          "stageId": "s5",
+          "name": "产水泵变频控制柜",
+          "specification": "800(宽)*2200(高)*1000(深)，MNS",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m113",
+          "stageId": "s5",
+          "name": "污泥回流泵变频控制柜",
+          "specification": "800(宽)*2200(高)*1000(深)，MNS",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m114",
+          "stageId": "s5",
+          "name": "CIP泵变频控制柜",
+          "specification": "800(宽)*2200(高)*1000(深)，MNS",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m115",
+          "stageId": "s5",
+          "name": "加药泵变频控制柜",
+          "specification": "800(宽)*2200(高)*1000(深)，MNS",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m116",
+          "stageId": "s5",
+          "name": "低压电气柜",
+          "specification": "800(宽)*2200(高)*1000(深)，MNS",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m117",
+          "stageId": "s5",
+          "name": "气动阀箱",
+          "specification": "非标定制，不锈钢304，IP55,支架安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m118",
+          "stageId": "s5",
+          "name": "电磁阀箱",
+          "specification": "非标定制，不锈钢304，IP55,支架安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m119",
+          "stageId": "s5",
+          "name": "排水泵现场控制箱",
+          "specification": "非标定制，不锈钢304，IP55,壁挂安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m120",
+          "stageId": "s5",
+          "name": "化料器控制箱",
+          "specification": "工艺成套提供",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m121",
+          "stageId": "s5",
+          "name": "电动单梁悬挂起重机开关箱",
+          "specification": "工艺成套提供",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m122",
+          "stageId": "s5",
+          "name": "电动葫芦开关箱",
+          "specification": "工艺成套提供",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m123",
+          "stageId": "s5",
+          "name": "动力配电箱",
+          "specification": "非标定制，不锈钢304，IP55,支架安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m124",
+          "stageId": "s5",
+          "name": "产水泵现场按钮箱",
+          "specification": "非标定制，不锈钢304，IP55,支架安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m125",
+          "stageId": "s5",
+          "name": "CIP泵现场按钮箱",
+          "specification": "非标定制，不锈钢304，IP55,支架安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m126",
+          "stageId": "s5",
+          "name": "剩余污泥泵现场按钮箱",
+          "specification": "非标定制，不锈钢304，IP55,支架安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m127",
+          "stageId": "s5",
+          "name": "真空泵现场按钮箱",
+          "specification": "非标定制，不锈钢304，IP55,支架安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m128",
+          "stageId": "s5",
+          "name": "污泥回流泵按钮箱",
+          "specification": "非标定制，不锈钢304，IP55,支架安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m129",
+          "stageId": "s5",
+          "name": "污泥回流泵接线盒",
+          "specification": "非标定制，不锈钢304，IP55,支架安装",
+          "unit": "台",
+          "basePrice": 100000
+        },
+        {
+          "id": "m130",
+          "stageId": "s5",
+          "name": "膜车间主站PLCA",
+          "specification": "",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m131",
+          "stageId": "s5",
+          "name": "膜车间远程站PLCA.1-膜车间远程站PLCA.4",
+          "specification": "",
+          "unit": "套",
+          "basePrice": 100000
+        },
+        {
+          "id": "m132",
+          "stageId": "s5",
+          "name": "交换机",
+          "specification": "",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m133",
+          "stageId": "s5",
+          "name": "膜控制系统软件编制",
+          "specification": "",
+          "unit": "项",
+          "basePrice": 100000
+        },
+        {
+          "id": "m134",
+          "stageId": "s5",
+          "name": "膜控制系统现场调试服务",
+          "specification": "",
+          "unit": "项",
+          "basePrice": 100000
+        },
+        {
+          "id": "m135",
+          "stageId": "s5",
+          "name": "仪表保护箱",
+          "specification": "",
+          "unit": "个",
+          "basePrice": 100000
+        },
+        {
+          "id": "m136",
+          "stageId": "s5",
+          "name": "安装",
+          "specification": "工艺设备、电气设备、仪表、阀门安装，工艺管道、电缆等材料及安装",
+          "unit": "项",
+          "basePrice": 100000
+        }
+      ]
+    },
+    {
+      "id": "s6",
+      "projectId": "p1",
+      "name": "精确曝气系统及配套设备",
+      "materials": []
+    }
+  ]
+}

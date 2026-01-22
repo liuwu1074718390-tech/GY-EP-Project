@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<title>手写签名</title>
+		<style type="text/css">
+			table tr {
+				height: 25px;
+			}
+		</style>
+	</head>
+	<body>
+		<fieldset style="margin-left: 5px; margin-right: 5px; margin-bottom: 0px; height: 250px; position: relative">
+			<table id="main">
+				<tr>
+					<td>关键字：</td>
+					<td>
+						<input id="keyword" name="keyword" type="text" value="" />
+					</td>
+				</tr>
+				<tr>
+					<td>位置：</td>
+					<td>
+						<input id="offsetpos_0" name="offsetpos" type="radio" value="0" checked="checked" /><label for="offsetpos_0"
+							>关键字后下方</label
+						><br />
+						<input id="offsetpos_1" name="offsetpos" type="radio" value="1" /><label for="offsetpos_1">关键字后中方</label><br />
+						<input id="offsetpos_2" name="offsetpos" type="radio" value="2" /><label for="offsetpos_2">关键字后上方</label><br />
+						<input id="offsetpos_3" name="offsetpos" type="radio" value="3" /><label for="offsetpos_3">关键字居中</label>
+					</td>
+				</tr>
+				<tr>
+					<td>偏移量：</td>
+					<td>
+						<input id="deltapos" name="deltapos" type="text" value="0" />
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<input id="confirm" type="button" value="确定" style="position: absolute; bottom: 0px; margin-left: 100px" />
+					</td>
+					<td><input id="cancel" type="button" value="取消" style="position: absolute; bottom: 0px; margin-left: 80px" /></td>
+				</tr>
+			</table>
+		</fieldset>
+	</body>
+
+	<script src="./jquery-1.8.2.min.js" type="text/javascript"></script>
+	<script type="text/javascript" src="../artDialog/artDialog.source.js?skin=black"></script>
+	<script type="text/javascript" src="../artDialog/iframeTools.source.js"></script>
+	<script type="text/javascript" src="../artDialog/FunctionJS.js"></script>
+	<script type="text/javascript">
+		//IE9 ajax请求老是进error
+		jQuery.support.cors = true;
+		$(function () {
+			//确定按钮点击事件
+			//弹出框关闭，调用close回调函数
+			$('#confirm').click(function () {
+				art.dialog.data('signtype', 'keyword'); // 存储数据
+				var keyword = $('#keyword').val();
+				if (keyword == '') {
+					alert('关键字不能为空');
+					return;
+				}
+				var offsetpos = $(":radio[name='offsetpos']:checked").val();
+				var deltapos = $('#deltapos').val();
+				if (deltapos == '') {
+					alert('偏移量不能为空');
+					return;
+				}
+				art.dialog.data('username', 'admin'); // 存储数据
+				art.dialog.data('keyword', keyword); // 存储数据
+				art.dialog.data('offsetpos', offsetpos); // 存储数据
+				art.dialog.data('deltapos', deltapos); // 存储数据
+				art.dialog.close();
+			});
+
+			$('#cancel').click(function () {
+				art.dialog.close();
+			});
+		});
+	</script>
+</html>

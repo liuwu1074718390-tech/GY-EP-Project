@@ -1,0 +1,55 @@
+// base color
+$primary: #377cfd;
+$success: #00c261;
+$warning: #ffa200;
+$danger: #ff2626;
+$info: #8a9099;
+$primary-hover: #5590fd;
+$primary-active: #0055cc;
+$primary-disabled: #7daafe;
+$--color-primary: #377cfd;
+$--color-success: #00c261;
+$--color-warning: #ffa200;
+$--color-danger: #ff2626;
+$--color-info: #8a9099;
+$--color-primary-hover: #5590fd;
+$--color-primary-active: #0055cc;
+$--color-primary-disabled: #7daafe;
+
+// 默认菜单主题风格
+$base-menu-color: #bfcbd9;
+$base-menu-color-active: #f4f4f5;
+$base-menu-background: #304156;
+$base-logo-title-color: #ffffff;
+$base-menu-light-color: rgb(0 0 0 / 70%);
+$base-menu-light-background: #ffffff;
+$base-logo-light-title-color: #001529;
+$base-sub-menu-background: #1f2d3d;
+$base-sub-menu-hover: #001528;
+$base-sub-menu-active: #303c4c;
+
+// 自定义暗色菜单风格
+
+// $base-menu-color: hsl(0deg 0% 100% / 65%);
+// $base-menu-color-active: #ffffff;
+// $base-menu-background: #39485b;
+// $base-logo-title-color: #ffffff;
+// $base-menu-light-color: rgb(0 0 0 / 70%);
+// $base-menu-light-background: #ffffff;
+// $base-logo-light-title-color: #001529;
+// $base-sub-menu-background: #39485b;
+// $base-sub-menu-hover: #49586b;
+// $base-sub-menu-active: #303c4c;
+
+$base-sidebar-width: 200px;
+$base-sidebar-hide-width: 54px;
+$top-nav-height: 60px;
+$tags-view-height: 34px;
+$logo-height: 80px;
+$topmenu-logo: 200px;
+$main-text-color: rgb(0 0 0 /80%);
+$sub-text-color: rgb(0 0 0 /48%);
+$invalid-text-color: rgb(0 0 0 /24%);
+$base-border-color: rgb(0 0 0 /24%);
+$base-divide-color: rgb(0 0 0 /12%);
+$base-background-color: rgb(0 0 0 /8%);

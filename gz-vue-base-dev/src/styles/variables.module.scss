@@ -1,0 +1,79 @@
+// base color
+$blue: #324157;
+$light-blue: #3a71a8;
+$red: #c03639;
+$pink: #e65d6e;
+$green: #30b08f;
+$tiffany: #4ab7bd;
+$yellow: #fec171;
+$panGreen: #30b08f;
+
+$--color-primary: #377cfd;
+$--color-success: #67c23a;
+$--color-warning: #e6a23c;
+$--color-danger: #f56c6c;
+$--color-info: #78a4fa;
+$--color-primary-hover: #5f96fe;
+$--color-primary-active: #316fe3;
+
+// 默认菜单主题风格
+$base-menu-color: #bfcbd9;
+$base-menu-color-active: #f4f4f5;
+$base-menu-background: #304156;
+$base-logo-title-color: #ffffff;
+$base-menu-light-color: rgb(0 0 0 / 70%);
+$base-menu-light-background: #ffffff;
+$base-logo-light-title-color: #001529;
+$base-sub-menu-background: #1f2d3d;
+$base-sub-menu-hover: #001528;
+$base-sub-menu-active: #303c4c;
+
+// 自定义暗色菜单风格
+
+// $base-menu-color: hsl(0deg 0% 100% / 65%);
+// $base-menu-color-active: #ffffff;
+// $base-menu-background: #39485b;
+// $base-logo-title-color: #ffffff;
+// $base-menu-light-color: rgb(0 0 0 / 70%);
+// $base-menu-light-background: #ffffff;
+// $base-logo-light-title-color: #001529;
+// $base-sub-menu-background: #39485b;
+// $base-sub-menu-hover: #49586b;
+// $base-sub-menu-active: #303c4c;
+
+$base-sidebar-width: 200px;
+$top-nav-height: 60px;
+$tags-view-height: 34px;
+$logo-height: 60px;
+$topmenu-logo: 200px;
+$main-text-color: rgb(0 0 0 /80%);
+$sub-text-color: rgb(0 0 0 /48%);
+$invalid-text-color: rgb(0 0 0 /24%);
+$base-border-color: rgb(0 0 0 /24%);
+$base-divide-color: rgb(0 0 0 /12%);
+$base-background-color: rgb(0 0 0 /8%);
+
+// the :export directive is the magic sauce for webpack
+// https://www.bluematador.com/blog/how-to-share-variables-between-js-and-sass
+:export {
+	menuColor: $base-menu-color;
+	menuLightColor: $base-menu-light-color;
+	menuColorActive: $base-menu-color-active;
+	menuBackground: $base-menu-background;
+	menuLightBackground: $base-menu-light-background;
+	subMenuBackground: $base-sub-menu-background;
+	subMenuHover: $base-sub-menu-hover;
+	sideBarWidth: $base-sidebar-width;
+	logoTitleColor: $base-logo-title-color;
+	logoLightTitleColor: $base-logo-light-title-color;
+	primaryColor: $--color-primary;
+	successColor: $--color-success;
+	dangerColor: $--color-danger;
+	infoColor: $--color-info;
+	warningColor: $--color-warning;
+	primary: $--color-primary;
+	success: $--color-success;
+	danger: $--color-danger;
+	info: $--color-info;
+	warning: $--color-warning;
+}

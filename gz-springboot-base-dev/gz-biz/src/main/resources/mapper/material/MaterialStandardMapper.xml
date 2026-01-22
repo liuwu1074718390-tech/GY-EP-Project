@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gz.biz.material.mapper.MaterialStandardMapper">
+
+    <resultMap id="MaterialStandardVOResult" type="com.gz.biz.material.domain.vo.MaterialStandardVO">
+        <id property="id" column="id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="categoryLevel1Id" column="category_level1_id"/>
+        <result property="categoryLevel1Name" column="category_level1_name"/>
+        <result property="categoryLevel1Code" column="category_level1_code"/>
+        <result property="categoryLevel2Id" column="category_level2_id"/>
+        <result property="categoryLevel2Name" column="category_level2_name"/>
+        <result property="categoryLevel2Code" column="category_level2_code"/>
+        <result property="categoryLevel3Id" column="category_level3_id"/>
+        <result property="categoryLevel3Name" column="category_level3_name"/>
+        <result property="categoryLevel3Code" column="category_level3_code"/>
+        <result property="specId" column="spec_id"/>
+        <result property="specName" column="spec_name"/>
+        <result property="specCode" column="spec_code"/>
+        <result property="unitId" column="unit_id"/>
+        <result property="unitName" column="unit_name"/>
+        <result property="unitCode" column="unit_code"/>
+        <result property="remark" column="remark"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <select id="selectMaterialStandardList" parameterType="com.gz.biz.material.domain.entity.MaterialStandardDO"
+            resultMap="MaterialStandardVOResult">
+        SELECT
+            ms.id,
+            ms.material_code,
+            ms.material_name,
+            ms.category_level1_id,
+            c1.category_name AS category_level1_name,
+            c1.category_code AS category_level1_code,
+            ms.category_level2_id,
+            c2.category_name AS category_level2_name,
+            c2.category_code AS category_level2_code,
+            ms.category_level3_id,
+            c3.category_name AS category_level3_name,
+            c3.category_code AS category_level3_code,
+            ms.spec_id,
+            spec.spec_name,
+            spec.spec_code,
+            ms.unit_id,
+            unit.unit_name,
+            unit.unit_code,
+            ms.remark,
+            ms.status,
+            ms.create_time,
+            ms.update_time
+        FROM material_standard ms
+        LEFT JOIN material_category c1 ON ms.category_level1_id = c1.id
+        LEFT JOIN material_category c2 ON ms.category_level2_id = c2.id
+        LEFT JOIN material_category c3 ON ms.category_level3_id = c3.id
+        LEFT JOIN material_specification spec ON ms.spec_id = spec.id
+        LEFT JOIN material_unit unit ON ms.unit_id = unit.id
+        WHERE ms.del_flag = '0'
+        <if test="id != null">
+            AND ms.id = #{id}
+        </if>
+        <if test="materialCode != null and materialCode != ''">
+            AND ms.material_code LIKE CONCAT('%', #{materialCode}, '%')
+        </if>
+        <if test="materialName != null and materialName != ''">
+            AND ms.material_name LIKE CONCAT('%', #{materialName}, '%')
+        </if>
+        <if test="categoryLevel1Id != null">
+            AND ms.category_level1_id = #{categoryLevel1Id}
+        </if>
+        <if test="categoryLevel2Id != null">
+            AND ms.category_level2_id = #{categoryLevel2Id}
+        </if>
+        <if test="categoryLevel3Id != null">
+            AND ms.category_level3_id = #{categoryLevel3Id}
+        </if>
+        <if test="specId != null">
+            AND ms.spec_id = #{specId}
+        </if>
+        <if test="unitId != null">
+            AND ms.unit_id = #{unitId}
+        </if>
+        <if test="status != null and status != ''">
+            AND ms.status = #{status}
+        </if>
+        ORDER BY ms.create_time DESC
+    </select>
+
+</mapper>
