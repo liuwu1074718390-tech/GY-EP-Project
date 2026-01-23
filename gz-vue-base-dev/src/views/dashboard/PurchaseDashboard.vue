@@ -5,7 +5,7 @@
       <div class="header-left">
         <h1 class="dashboard-title">
           <el-icon><DataAnalysis /></el-icon>
-          采购管理驾驶舱
+          供应商材料价格管理驾驶舱
         </h1>
         <span class="update-time">数据更新时间：{{ currentTime }}</span>
       </div>

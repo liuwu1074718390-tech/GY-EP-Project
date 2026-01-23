@@ -33,7 +33,7 @@ export default defineConfig(({ mode, command }) => {
 		server: {
 			port: VITE_APP_PORT,
 			host: true,
-			open: true,
+			open: false,
 			proxy: {
 				// Java后端代理（材料标准管理等模块）- 必须在通用代理之前
 				'/dev-api/material': {
