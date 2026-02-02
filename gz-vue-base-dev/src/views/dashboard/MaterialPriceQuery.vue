@@ -62,6 +62,9 @@
         <!-- 高级筛选（折叠） -->
         <el-collapse-transition>
           <div v-show="showAdvanced" class="filter-row-secondary">
+            <el-select v-model="filterForm.categoryName" placeholder="材料分类" clearable filterable class="filter-item-medium">
+              <el-option v-for="item in uniqueValues.categories" :key="item" :label="item" :value="item" />
+            </el-select>
             <el-select v-model="filterForm.brand" placeholder="品牌" clearable filterable class="filter-item-small">
               <el-option v-for="item in uniqueValues.brands" :key="item" :label="item" :value="item" />
             </el-select>
@@ -77,7 +80,7 @@
               <el-option label="9%" :value="9" />
               <el-option label="13%" :value="13" />
             </el-select>
-            <el-input v-model="filterForm.supplierCompany" placeholder="报价企业" clearable class="filter-item-medium" />
+            <el-input v-model="filterForm.supplierCompany" placeholder="报价供应商" clearable class="filter-item-medium" />
           </div>
         </el-collapse-transition>
       </el-form>
@@ -111,6 +114,8 @@
           </template>
         </el-table-column>
 
+        <el-table-column prop="categoryName" label="所属分类" width="130" show-overflow-tooltip />
+
         <el-table-column prop="unit" label="单位" width="70" align="center" />
         <el-table-column prop="brand" label="品牌" width="110" show-overflow-tooltip />
         <el-table-column prop="quantity" label="数量" width="90" align="right" />
@@ -138,7 +143,13 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="supplierCompany" label="报价企业" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="supplierCompany" label="报价供应商" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span class="supplier-link" @click="handleSupplierClick(row)">
+              {{ row.supplierCompany }}
+            </span>
+          </template>
+        </el-table-column>
       </el-table>
 
       <!-- 分页器 -->
@@ -159,8 +170,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Filter, Search, Refresh, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import { materialPriceData, filterMaterialData, uniqueValues } from './mockMaterialData'
+
+const router = useRouter()
 
 // 筛选表单
 const filterForm = ref({
@@ -172,7 +186,8 @@ const filterForm = ref({
   priceType: '',
   unit: '',
   taxRate: null,
-  supplierCompany: ''
+  supplierCompany: '',
+  categoryName: ''
 })
 
 // 高级筛选展开状态
@@ -209,10 +224,24 @@ const handleReset = () => {
     priceType: '',
     unit: '',
     taxRate: null,
-    supplierCompany: ''
+    supplierCompany: '',
+    categoryName: ''
   }
   filteredData.value = [...materialPriceData]
   currentPage.value = 1
+}
+
+// 跳转到供应商详情
+const handleSupplierClick = (row) => {
+  // 由于模拟数据中没有 supplierId，这里暂时使用固定 ID 或根据名称生成的哈希 ID
+  // 在实际业务中应从 row.supplierId 获取
+  const dummyId = 1 
+  const { href } = router.resolve({
+    name: 'SupplierDetail',
+    params: { id: dummyId },
+    query: { name: row.supplierCompany }
+  })
+  window.open(href, '_blank')
 }
 </script>
 
@@ -227,7 +256,19 @@ $text-main: #1d1d1f;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  white-space: nowrap;
   cursor: help; // 提示用户可悬停
+}
+
+.supplier-link {
+  color: $primary-blue;
+  cursor: pointer;
+  font-weight: 600;
+  
+  &:hover {
+    text-decoration: underline;
+    opacity: 0.8;
+  }
 }
 
 .material-price-query {

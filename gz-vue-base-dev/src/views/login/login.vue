@@ -123,7 +123,7 @@ function handleLogin() {
 						}
 						return acc;
 					}, {});
-					router.push({ path: redirect.value || '/', query: otherQueryParams });
+					router.push({ path: redirect.value || '/workbench', query: otherQueryParams });
 				})
 				.catch(() => {
 					loading.value = false;

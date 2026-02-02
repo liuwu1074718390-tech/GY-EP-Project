@@ -526,6 +526,39 @@ export const materialPriceData = [
     }
 ]
 
+// 补充所属分类映射逻辑
+const materialCategoryMap = {
+    '提升水泵': '潜污提升泵',
+    '螺旋压榨机': '螺旋输送压榨机',
+    '冲洗泵组': '立式多级冲洗泵',
+    '恒压冲洗泵组': '立式多级冲洗泵',
+    '厌氧搅拌器': '立式厌氧搅拌器',
+    '缺氧搅拌器': '立式厌氧搅拌器',
+    '缺氧推流器': '低速推流搅拌机',
+    'MBR膜组器系统': 'MBR膜组件系统',
+    '进水闸门': '不锈钢附壁方闸门',
+    '出水闸门': '不锈钢附壁方闸门',
+    '电动葫芦': '电动葫芦起重设备',
+    '产水专用设备': '螺旋输送压榨机',
+    'CIP泵': '立式多级冲洗泵',
+    '液环真空泵': '潜污提升泵',
+    '气水分离罐': '螺旋输送压榨机',
+    '剩余污泥泵': '潜污提升泵',
+    '手动对夹式蝶阀': '对夹式手动蝶阀',
+    '电动调节阀': '电动调节平衡阀',
+    '电磁流量计': '智能电磁流量计',
+    '超声波液位计': '超声波液位变送器',
+    '溶解氧仪': '荧光法溶解氧仪',
+    'PH计': '在线玻璃电极PH计',
+    '浊度仪': '智能电磁流量计',
+    '变频控制柜': '变频启动控制柜',
+    '鼓风机': '罗茨鼓风机电控'
+};
+
+materialPriceData.forEach(item => {
+    item.categoryName = materialCategoryMap[item.materialName] || '水处理专用设备'
+});
+
 // 筛选函数
 export function filterMaterialData(filters) {
     let result = [...materialPriceData]
@@ -584,6 +617,12 @@ export function filterMaterialData(filters) {
         )
     }
 
+    if (filters.categoryName) {
+        result = result.filter(item =>
+            item.categoryName === filters.categoryName
+        )
+    }
+
     return result
 }
 
@@ -594,5 +633,6 @@ export const uniqueValues = {
     units: [...new Set(materialPriceData.map(item => item.unit))],
     priceTypes: ['投标价', '中标价'],
     taxRates: [6, 9, 13],
-    suppliers: [...new Set(materialPriceData.map(item => item.supplierCompany))]
+    suppliers: [...new Set(materialPriceData.map(item => item.supplierCompany))],
+    categories: [...new Set(materialPriceData.map(item => item.categoryName))].sort()
 }

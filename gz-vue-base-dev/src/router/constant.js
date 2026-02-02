@@ -39,9 +39,9 @@ export default [
 		children: [
 			{
 				path: '/index',
-				component: () => import('@/views/index'),
+				component: () => import('@/views/dashboard/MaterialDashboard.vue'),
 				name: 'Index',
-				meta: { title: '首页', icon: 'dashboard', affix: true }
+				meta: { title: '驾驶舱', icon: 'dashboard', affix: true }
 			}
 		]
 	},
@@ -66,17 +66,45 @@ export default [
 		meta: { title: '工作台', icon: 'dashboard' }
 	},
 	{
-		path: '/material',
+		path: '/purchase-dashboard-2',
+		component: () => import('@/views/dashboard/PurchaseDashboard2.vue'),
+		hidden: true,
+		meta: { title: '驾驶舱2', icon: 'chart' }
+	},
+	{
+		path: '/material-standard',
 		component: Layout,
 		redirect: '/material/standard',
-		meta: { title: '材料管理', icon: 'goods' },
+		hidden: true,
+		meta: { title: '材料标准', icon: 'goods' },
 		children: [
 			{
 				path: 'standard',
 				component: () => import('@/views/system/MaterialStandard.vue'),
 				name: 'MaterialStandard',
-				meta: { title: '材料标准管理', icon: 'goods' }
+				meta: { title: '材料标准', icon: 'goods' }
 			}
 		]
+	},
+	{
+		path: '/supplier',
+		component: Layout,
+		redirect: '/supplier/query',
+		meta: { title: '供应商查询', icon: 'user' },
+		children: [
+			{
+				path: 'query',
+				component: () => import('@/views/system/SupplierQuery.vue'),
+				name: 'SupplierQuery',
+				meta: { title: '供应商查询', icon: 'user' }
+			}
+		]
+	},
+	{
+		path: '/supplier/detail/:id',
+		component: () => import('@/views/system/SupplierDetail.vue'),
+		name: 'SupplierDetail',
+		hidden: true,
+		meta: { title: '供应商详情', icon: 'user' }
 	}
 ];

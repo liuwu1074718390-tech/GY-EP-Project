@@ -25,6 +25,7 @@
 <script setup>
 import { ref, getCurrentInstance, watch } from 'vue';
 import { updateUserProfile } from '@/api/system/user';
+import useUserStore from '@/store/modules/user';
 
 const props = defineProps({
 	user: {
@@ -33,6 +34,7 @@ const props = defineProps({
 });
 
 const { proxy } = getCurrentInstance();
+const userStore = useUserStore();
 
 const form = ref({});
 const rules = ref({
@@ -53,8 +55,11 @@ function submit() {
 		if (valid) {
 			updateUserProfile(form.value).then(response => {
 				proxy.$modal.msgSuccess('修改成功');
+				props.user.nickName = form.value.nickName;
 				props.user.phonenumber = form.value.phonenumber;
 				props.user.email = form.value.email;
+				// 刷新 store 中的用户信息，确保侧边栏等组件同步更新
+				userStore.getInfo();
 			});
 		}
 	});

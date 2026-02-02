@@ -9,6 +9,7 @@ const useUserStore = defineStore('user', () => {
 	const token = ref(getToken());
 	const id = ref('');
 	const name = ref('');
+	const nickName = ref('');
 	const avatar = ref('');
 	const roles = ref([]);
 	const permissions = ref([]);
@@ -48,6 +49,7 @@ const useUserStore = defineStore('user', () => {
 					}
 					id.value = user.userId;
 					name.value = user.userName;
+					nickName.value = user.nickName;
 					avatar.value = avatarUrl;
 					resolve(res);
 				})
@@ -79,6 +81,7 @@ const useUserStore = defineStore('user', () => {
 		token,
 		id,
 		name,
+		nickName,
 		avatar,
 		roles,
 		permissions,

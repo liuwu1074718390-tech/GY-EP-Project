@@ -8,23 +8,10 @@
 				<template #reference>
 					<div class="flex-start-horizontal cur-info">
 						<el-avatar shape="square" class="cur-p" :size="28" :src="curEntInfo.ossHeadImg || logoEnt" />
-						<svg-icon class="menu-show" icon-class="menu-show" />
-						<!-- <p class="flex-space-between">
-						<span class="tx-of f-13" :title="curEntInfo.name">{{ curEntInfo.name }}</span>
-						<el-icon style="width: 16px; height: 16px"><CaretBottom /></el-icon>
-					</p> -->
+						<span v-if="!isCollapse" class="user-name-text tx-of">{{ curEntInfo.name }}</span>
 					</div>
 				</template>
 				<template #default>
-					<!-- <div class="flex-space-between">
-					<el-button type="primary" @click="toHome"
-						><el-icon class="f-22 mr-5"><Position /></el-icon> 进入交易平台</el-button
-					>
-					<el-button plain @click="logout">
-						<svg-icon class="mr-5" style="width: 16px; height: 16px" icon-class="logout-box-r-line" />
-						<span style="color: #333333">退出登录</span>
-					</el-button>
-				</div> -->
 					<p class="f-14 f-700 pb-10">切换登录</p>
 					<div class="ent-list">
 						<div class="ent-item flex-start-horizontal pos-r" @click="toPersonal">
@@ -47,16 +34,6 @@
 						><el-icon class="f-22 mr-5"><Plus /></el-icon>注册/加入企业</el-button
 					>
 				</template>
-			</el-popover>
-
-			<!-- home -->
-			<el-popover trigger="hover" :placement="isCollapse ? 'right' : 'top-start'">
-				<template #reference>
-					<div class="cur-p gz-user-ent-menu-item" @click="toHome">
-						<svg-icon style="width: 18px; height: 18px" icon-class="menu-home" />
-					</div>
-				</template>
-				<template #default><p class="text-c cur-p" @click="toHome">广咨智采首页</p></template>
 			</el-popover>
 
 			<!-- user -->
@@ -213,7 +190,6 @@ const toUser = () => {
 </script>
 
 <style lang="scss" scoped>
-// $home-height: 40px;
 .sidebarLogoFade-enter-active {
 	transition: opacity 1.5s;
 }
@@ -253,46 +229,51 @@ const toUser = () => {
 		transform: translateY(-50%);
 	}
 }
+
 .gz-user-ent-menu {
 	width: 100%;
-	// height: $home-height;
 	overflow: hidden;
-	// line-height: $home-height;
 	text-align: center;
-	// background-color: inherit !important;
-	// position: relative;
-	// z-index: 999;
-	// box-shadow: 0 0 4px #e0e5ed;
 	border: 1px solid #f3f5f9;
 	border-radius: 8px;
 }
+
 .gz-user-ent-menu-list {
 	width: 100%;
 	background: #f5f8fd;
 	padding: 6px 10px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	box-sizing: border-box;
 
 	.cur-info {
 		cursor: pointer;
-		// height: 100%;
-		// width: 100%;
-		& > p {
-			width: calc(100% - 45px);
-			span {
-				width: calc(100% - 10px);
-				text-align: left;
-			}
-		}
+		display: flex;
+		align-items: center;
+		flex: 1;
+		min-width: 0;
 
 		.el-avatar {
 			border: 2px solid #ffffff;
+			flex-shrink: 0;
 		}
 
-		.menu-show {
-			width: 18px !important;
-			height: 18px !important;
-			margin-left: -2px !important;
-			margin-right: 0 !important;
+		.user-name-text {
+			font-size: 13px;
+			color: #333;
+			margin-left: 8px;
+			font-weight: 500;
+			max-width: 60px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
+	}
+
+	.gz-user-ent-menu-item {
+		flex-shrink: 0;
+		margin-left: 4px;
 	}
 
 	.svg-icon {
@@ -300,14 +281,16 @@ const toUser = () => {
 	}
 
 	&.flex-space-between-vertical {
-		> .gz-user-ent-menu-item .svg-icon {
-			margin: 8px !important;
-		}
-
+		flex-direction: column;
 		.cur-info {
-			margin-left: 14px;
+			margin-left: 0;
 			margin-top: 4px;
 			margin-bottom: 4px;
+			justify-content: center;
+		}
+		.gz-user-ent-menu-item {
+			margin-left: 0;
+			margin-top: 4px;
 		}
 	}
 }

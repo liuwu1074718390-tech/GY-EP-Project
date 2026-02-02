@@ -24,21 +24,13 @@
           </div>
         </nav>
         <div class="sidebar-footer">
-          <div class="user-avatar-section">
-            <img src="@/assets/images/touxiang.png" class="user-avatar" alt="User" />
-            <div class="user-arrows">
-              <el-icon><CaretTop /></el-icon>
-              <el-icon><CaretBottom /></el-icon>
-            </div>
+          <div class="user-avatar-section" @click="goUserCenter">
+            <img :src="userStore.avatar || '@/assets/images/touxiang.png'" class="user-avatar" alt="User" />
+            <span class="user-name-text">{{ userStore.nickName || '用户' }}</span>
           </div>
           <div class="footer-actions">
-            <el-tooltip content="回到首页" placement="top">
-              <div class="action-item">
-                <el-icon><HomeFilled /></el-icon>
-              </div>
-            </el-tooltip>
             <el-tooltip content="个人中心" placement="top">
-              <div class="action-item">
+              <div class="action-item" @click="goUserCenter">
                 <el-icon><User /></el-icon>
               </div>
             </el-tooltip>
@@ -57,34 +49,43 @@
         <component :is="currentViewComponent" />
       </main>
     </div>
+    
+    <!-- 个人中心弹窗 -->
+    <UserProfileModal ref="userProfileRef" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { 
-  DataBoard, Search, Collection, Postcard, 
+  DataAnalysis, TrendCharts, Search, Collection, Postcard, 
   OfficeBuilding, PriceTag,
-  HomeFilled, User, SwitchButton, CaretTop, CaretBottom
+  HomeFilled, User, SwitchButton, CaretTop, CaretBottom,
+  UserFilled
 } from '@element-plus/icons-vue'
 import MaterialPriceQuery from './MaterialPriceQuery.vue'
 import PurchaseComparison from './PurchaseComparison.vue'
-import PurchaseDashboard from './PurchaseDashboard.vue'
+import MaterialDashboard from './MaterialDashboard.vue'
+import PurchaseDashboard2 from './PurchaseDashboard2.vue'
 import MaterialStandard from '../system/MaterialStandard.vue'
+import SupplierQuery from '../system/SupplierQuery.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import useUserStore from '@/store/modules/user'
+import UserProfileModal from './UserProfileModal.vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const userProfileRef = ref(null)
 
 const goHome = () => {
   router.push('/index')
 }
 
 const goUserCenter = () => {
-  router.push('/user/profile')
+  // router.push('/user/profile')
+  userProfileRef.value.open()
 }
 
 const handleLogout = () => {
@@ -95,7 +96,7 @@ const handleLogout = () => {
   })
     .then(() => {
       userStore.logOut().then(() => {
-        location.href = '/index'
+        location.href = '/'
       })
     })
     .catch(() => {})
@@ -103,10 +104,12 @@ const handleLogout = () => {
 
 // 动态组件映射
 const componentMap = {
-  '驾驶舱': PurchaseDashboard,
+  '驾驶舱': MaterialDashboard,
+  '驾驶舱2': PurchaseDashboard2,
   '材价查询': MaterialPriceQuery,
   '采购比价': PurchaseComparison,
   '材料标准': MaterialStandard,
+  '供应商查询': SupplierQuery,
   // 后续可继续添加其他模块
   // '成员管理': MemberManagement,
   // '企业信息': CompanyInfo,
@@ -114,19 +117,17 @@ const componentMap = {
 
 // 初始化 activeMenu，优先从 URL query 读取，实现刷新保持状态
 const initialTab = route.query.tab
-const isValidMenu = (name) => !!componentMap[name] || ['材料标准', '成员管理', '企业信息'].includes(name)
+const isValidMenu = (name) => !!componentMap[name] || ['材料标准', '供应商查询'].includes(name)
 const activeMenu = ref(isValidMenu(initialTab) ? initialTab : '驾驶舱')
 
 // 当前视图组件
 const currentViewComponent = computed(() => componentMap[activeMenu.value])
 
 const menuItems = [
-  { name: '驾驶舱', label: '驾驶舱', icon: 'DataBoard' },
+  { name: '驾驶舱', label: '驾驶舱', icon: 'DataAnalysis' },
   { name: '材价查询', label: '材价查询', icon: 'Search' },
   { name: '采购比价', label: '采购比价', icon: 'PriceTag' },
-  { name: '材料标准', label: '材料标准', icon: 'Collection' },
-  { name: '成员管理', label: '成员管理', icon: 'Postcard' },
-  { name: '企业信息', label: '企业信息', icon: 'OfficeBuilding' },
+  { name: '供应商查询', label: '供应商查询', icon: 'OfficeBuilding' },
 ]
 
 // 菜单点击处理
@@ -135,6 +136,13 @@ const handleMenuClick = (menuName) => {
   // 更新 URL query，不刷新页面
   router.replace({ query: { ...route.query, tab: menuName } })
 }
+
+// 监听路由参数变化，实现组件内部跳转同步
+watch(() => route.query.tab, (newTab) => {
+  if (isValidMenu(newTab) && activeMenu.value !== newTab) {
+    activeMenu.value = newTab
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -263,7 +271,7 @@ $text-sub: #86868b;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 10px 2px;
+      padding: 15px 2px 5px;
       border-radius: 16px;
       cursor: pointer;
       transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
@@ -310,38 +318,38 @@ $text-sub: #86868b;
     .user-avatar-section {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       cursor: pointer;
+      flex: 1;
+      min-width: 0; // 允许 flex 子项收缩
       
       .user-avatar {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         border: 2px solid white;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         transition: transform 0.3s;
+        flex-shrink: 0;
         &:hover { transform: scale(1.05); }
       }
       
-      .user-arrows {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 0;
-        .el-icon { 
-          font-size: 10px; 
-          color: $text-sub; 
-          height: 8px; 
-          display: flex; 
-          align-items: center;
-        }
+      .user-name-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 80px;
       }
     }
 
     .footer-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
+      flex-shrink: 0;
       
       .action-item {
         width: 32px;

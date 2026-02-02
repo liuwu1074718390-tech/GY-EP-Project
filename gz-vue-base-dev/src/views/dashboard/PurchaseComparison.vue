@@ -882,8 +882,10 @@ $text-main: #1d1d1f;
         
         .price-cards {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 16px;
+          width: 100%;
+          box-sizing: border-box;
 
           .price-card {
             padding: 16px;
@@ -891,6 +893,10 @@ $text-main: #1d1d1f;
             border-radius: 12px;
             border: 1px solid #e4e7ed;
             transition: all 0.3s;
+            min-width: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
 
             &:hover {
               box-shadow: 0 6px 16px rgba(0,0,0,0.08);
@@ -925,6 +931,11 @@ $text-main: #1d1d1f;
               color: $text-main;
               margin-bottom: 8px;
               min-height: 36px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
             }
 
             .price-amount {
