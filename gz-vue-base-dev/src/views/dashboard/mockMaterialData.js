@@ -523,7 +523,89 @@ export const materialPriceData = [
         purchaseTime: randomDate(),
         priceType: randomChoice(['投标价', '中标价']),
         supplierCompany: randomChoice(suppliers)
-    }
+    },
+    // 以下为追加的重复数据以展示价格区间效果
+    {
+        id: 101,
+        materialName: '提升水泵',
+        specification: '潜污泵,Q=2083m³/h,H=9.5m,N=75kW,带变频控制、导轨及自耦系统',
+        unit: '台',
+        brand: '威乐',
+        quantity: 2,
+        priceExcludingTax: 125000, // 价格略低
+        taxRate: 13,
+        priceIncludingTax: 141250,
+        sourceProject: '洛溪水厂首期',
+        purchaseTime: '2025-01',
+        priceType: '中标价',
+        supplierCompany: '格兰富水泵(中国)有限公司'
+    },
+    {
+        id: 102,
+        materialName: '提升水泵',
+        specification: '潜污泵,Q=1041m³/h,H=9.5m,N=37kW,带变频控制、导轨及自耦系统',
+        unit: '台',
+        brand: '凯泉',
+        quantity: 5,
+        priceExcludingTax: 72000, // 价格略高
+        taxRate: 13,
+        priceIncludingTax: 81360,
+        sourceProject: '中部大龙水厂',
+        purchaseTime: '2024-12',
+        priceType: '投标价',
+        supplierCompany: '上海凯泉泵业集团有限公司'
+    },
+    {
+        id: 103,
+        materialName: '螺旋压榨机',
+        specification: '过滤精度3mm,N=2.2kW',
+        unit: '台',
+        brand: '苏尔寿',
+        quantity: 2,
+        priceExcludingTax: 43000,
+        taxRate: 13,
+        priceIncludingTax: 48590,
+        sourceProject: '市政管网改造工程',
+        purchaseTime: '2025-02',
+        priceType: '中标价',
+        supplierCompany: '苏州纳诺环保科技有限公司'
+    },
+    {
+        id: 104,
+        materialName: '冲洗泵组',
+        specification: '立式多级泵组,单泵Q=8m³/h,H=81m,N=3kW,带变频控制、进口过滤器',
+        unit: '套',
+        brand: '南方泵业',
+        quantity: 3,
+        priceExcludingTax: 30500,
+        taxRate: 13,
+        priceIncludingTax: 34465,
+        sourceProject: '污水处理厂扩建项目',
+        purchaseTime: '2024-11',
+        priceType: '投标价',
+        supplierCompany: '佛山市水泵厂有限公司'
+    },
+    // -----------------------------------------------------------
+    // 批量生成 "提升水泵" 的更多模拟数据 (展示价格区间)
+    // -----------------------------------------------------------
+    ...Array.from({ length: 15 }).map((_, index) => ({
+        id: 2000 + index,
+        materialName: '提升水泵',
+        specification: '潜污泵,Q=2083m³/h,H=9.5m,N=75kW,带变频控制、导轨及自耦系统',
+        unit: '台',
+        brand: randomChoice(['威乐', '凯泉', '格兰富', '连成', 'KSB', '白云泵业', '肯富来']),
+        quantity: Math.floor(Math.random() * 5) + 1,
+        priceExcludingTax: 120000 + Math.floor(Math.random() * 20000) - 10000,
+        taxRate: 13,
+        priceIncludingTax: 0,
+        sourceProject: randomChoice(sourceProjects),
+        purchaseTime: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}`,
+        priceType: randomChoice(['投标价', '中标价']),
+        supplierCompany: randomChoice(suppliers)
+    })).map(item => {
+        item.priceIncludingTax = item.priceExcludingTax * (1 + item.taxRate / 100)
+        return item
+    })
 ]
 
 // 补充所属分类映射逻辑
@@ -557,6 +639,43 @@ const materialCategoryMap = {
 
 materialPriceData.forEach(item => {
     item.categoryName = materialCategoryMap[item.materialName] || '水处理专用设备'
+});
+
+// 后端模拟：为每条数据计算价格区间
+materialPriceData.forEach(item => {
+    // 找出相同材料名称+规格的所有记录
+    const similar = materialPriceData.filter(
+        m => m.materialName === item.materialName &&
+            m.specification === item.specification
+    )
+
+    // 如果只有1条记录，不设置区间
+    if (similar.length <= 1) {
+        item.rangeExcl = null
+        item.rangeIncl = null
+        item.avgExcl = item.priceExcludingTax
+        item.avgIncl = item.priceIncludingTax
+        return
+    }
+
+    // 计算价格区间
+    const pricesExcl = similar.map(m => m.priceExcludingTax)
+    const pricesIncl = similar.map(m => m.priceIncludingTax)
+
+    const minExcl = Math.min(...pricesExcl)
+    const maxExcl = Math.max(...pricesExcl)
+    const minIncl = Math.min(...pricesIncl)
+    const maxIncl = Math.max(...pricesIncl)
+
+    // 计算平均值
+    const avgExcl = pricesExcl.reduce((a, b) => a + b, 0) / pricesExcl.length
+    const avgIncl = pricesIncl.reduce((a, b) => a + b, 0) / pricesIncl.length
+
+    // 设置价格区间字段（模拟后端返回）
+    item.rangeExcl = [minExcl, maxExcl]
+    item.rangeIncl = [minIncl, maxIncl]
+    item.avgExcl = avgExcl
+    item.avgIncl = avgIncl
 });
 
 // 筛选函数
@@ -618,9 +737,13 @@ export function filterMaterialData(filters) {
     }
 
     if (filters.categoryName) {
-        result = result.filter(item =>
-            item.categoryName === filters.categoryName
-        )
+        const target = filters.categoryName
+        result = result.filter(item => {
+            if (Array.isArray(target)) {
+                return target.some(name => item.categoryName && item.categoryName.includes(name))
+            }
+            return item.categoryName && item.categoryName.includes(target)
+        })
     }
 
     return result

@@ -1,5 +1,5 @@
 <template>
-  <div class="material-dashboard">
+  <div class="material-dashboard" ref="dashboardRef">
     <!-- 顶部标题栏 -->
     <div class="dashboard-header">
       <div class="header-left">
@@ -130,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { 
   DataAnalysis, Refresh, CaretTop, CaretBottom, ArrowRight,
@@ -147,6 +147,8 @@ import {
 } from './mockMaterialDashboard.js'
 
 const router = useRouter()
+
+const dashboardRef = ref(null)
 
 // 响应式数据
 const currentTime = ref('')
@@ -626,10 +628,19 @@ function handleResize() {
   commodityChart?.resize()
   categoryChart?.resize()
   supplierChart?.resize()
+  
+  // 修复宽窄屏切换后可能的滚动位置残留导致底部被遮挡
+  if (window.innerWidth > 1240 && dashboardRef.value) {
+    const parent = dashboardRef.value.parentElement
+    if (parent && parent.scrollTop !== 0) {
+      parent.scrollTop = 0
+    }
+  }
 }
 
 // 生命周期
 let timer = null
+let resizeObserver = null
 
 onMounted(() => {
   updateCurrentTime()
@@ -637,11 +648,19 @@ onMounted(() => {
   timer = setInterval(updateCurrentTime, 3600000)
   initAllCharts()
   window.addEventListener('resize', handleResize)
+
+  if (dashboardRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      handleResize()
+    })
+    resizeObserver.observe(dashboardRef.value)
+  }
 })
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
   window.removeEventListener('resize', handleResize)
+  if (resizeObserver) resizeObserver.disconnect()
   deviationChart?.dispose()
   commodityChart?.dispose()
   categoryChart?.dispose()
@@ -653,15 +672,26 @@ onUnmounted(() => {
 .material-dashboard {
   padding: 0;
   background: transparent;
-  min-height: 100%;
+  // 响应式图表高度变量（保证图表完整显示，允许页面纵向滚动）
+  --chart-min-h: 320px;
+  --chart-ideal-h: 38vh;
+  --chart-max-h: 520px;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  height: 100%; 
+  min-height: 0; // 关键：允许 flex 容器缩得比内容小
+  overflow: hidden; 
+  position: relative; // 建立定位上下文
+  gap: 16px; // 统一间距 16px，利用 parent gap 确保绝对一致
   
   .dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 0 16px 16px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0;
     padding: 16px 20px;
     background: #fff;
     border-radius: 8px;
@@ -672,6 +702,8 @@ onUnmounted(() => {
       display: flex;
       align-items: center;
       gap: 20px;
+      min-width: 0;
+      flex: 1 1 360px;
       
       .dashboard-title {
         display: flex;
@@ -698,17 +730,20 @@ onUnmounted(() => {
       display: flex;
       align-items: center;
       gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      flex: 0 1 auto;
     }
   }
   
   .kpi-cards {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 12px;
-    margin: 0 16px 16px 16px;
+    margin: 0;
     min-width: 0;
     overflow-x: auto;
-    padding-bottom: 4px;
+    padding-bottom: 0; // 移除底部内边距，确保与主 gap 配合时间距精准对齐
     flex-shrink: 0;
     
     &::-webkit-scrollbar {
@@ -810,19 +845,35 @@ onUnmounted(() => {
   }
   
   .dashboard-content {
-    display: grid;
-    grid-template-columns: 60fr 40fr;
+    display: flex;
+    flex-wrap: wrap; // 允许自动换行
     gap: 16px;
-    margin: 0 16px 16px 16px;
+    margin: 0; // 对齐侧边栏底边
+    padding-bottom: 2px; // 防止底部圆角被切边部边距，使底部与侧边栏对齐
+    padding-bottom: 2px; // 留出极小间隙，防止容器 overflow:hidden 在亚像素渲染时切掉圆角边框
+    // 填满剩余纵向空间
     flex: 1;
     min-height: 0;
+    align-items: stretch; // 确保子列撑满高度
+    align-content: stretch; // 当不换行时，确保行填充容器高度
+    // 当宽度窄触发换行时，高度分配策略会改变，此时通过外部滚动
     
-    .content-left,
+    .content-left {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1 1 600px; 
+      min-width: 0;
+      min-height: 0; // 允许在垂直方向收缩
+    }
+
     .content-right {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      min-height: 0;
+      flex: 1 1 380px;
+      min-width: 0;
+      min-height: 0; // 允许在垂直方向收缩
     }
     
     .chart-card {
@@ -832,16 +883,20 @@ onUnmounted(() => {
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
       min-height: 0;
       
       &.flex-card {
-        flex: 1;
+        flex: 1; 
+        min-height: 160px; // 下调最小高度阈值，给高度收窄腾出空间
       }
       
       .card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
         margin-bottom: 12px;
         flex-shrink: 0;
         
@@ -859,33 +914,11 @@ onUnmounted(() => {
       }
       
       .chart-container {
-        flex: 1;
-        min-height: 300px;
+        flex: 1; 
+        min-height: 100px;
+        height: 100%;
+        overflow: hidden; // 防止图表缩放延迟时的溢出
       }
-    }
-  }
-}
-
-@media screen and (max-width: 1600px) {
-  .material-dashboard {
-    .kpi-cards {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .dashboard-content {
-      grid-template-columns: 1fr;
-    }
-  }
-}
-
-@media screen and (max-width: 1200px) {
-  .material-dashboard {
-    .kpi-cards {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .dashboard-content {
-      grid-template-columns: 1fr;
     }
   }
 }
@@ -895,23 +928,19 @@ onUnmounted(() => {
   .material-dashboard {
     .kpi-cards {
       padding-bottom: 0;
-      margin-bottom: 12px;
+      margin-bottom: 0; // 统一由父级 gap 控制
     }
     
     .dashboard-content {
       gap: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 0;
       
       .chart-card {
-        padding: 12px; // 减少内边距
+        padding: 12px; 
         
         .card-header {
-          margin-bottom: 8px; // 减少标题下边距
+          margin-bottom: 8px;
           h3 { font-size: 14px; }
-        }
-
-        .chart-container {
-          min-height: 200px; // 降低最小高度
         }
       }
       
@@ -927,13 +956,13 @@ onUnmounted(() => {
 @media screen and (max-height: 768px) {
   .material-dashboard {
     .dashboard-header {
-      margin-bottom: 12px;
+      margin-bottom: 0;
       padding: 12px 16px;
     }
     
     .kpi-cards {
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 0;
       
       .kpi-card {
         padding: 12px;
@@ -942,14 +971,10 @@ onUnmounted(() => {
 
     .dashboard-content {
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 0;
       
       .chart-card {
         padding: 10px;
-        
-        .chart-container {
-          min-height: 160px; // 进一步降低
-        }
       }
       
       .content-left,
@@ -966,14 +991,34 @@ onUnmounted(() => {
     .dashboard-content {
       .chart-card {
         padding: 8px;
-        .chart-container {
-          min-height: 120px; // 极限高度
-        }
       }
       
       .content-left,
       .content-right {
         gap: 8px;
+      }
+    }
+  }
+}
+
+// 响应式宽度调整 - 当看板由于空间不足开始换行堆叠时（约 1240px），立即切换到滚动模式并保持高度
+@media screen and (max-width: 1240px) {
+  .material-dashboard {
+    height: auto; // 允许自适应内容高度
+    overflow: visible;
+
+    .dashboard-content {
+      flex: none; // 关闭弹性填满
+      
+      .content-left,
+      .content-right {
+        flex: none;
+        width: 100%;
+      }
+
+      .chart-card.flex-card {
+        flex: none;
+        height: 260px; // 统一调整为 260px，确保堆叠模式下比例协调
       }
     }
   }

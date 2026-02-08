@@ -24,17 +24,9 @@
         <div class="sidebar-footer">
           <div class="user-avatar-section">
             <img src="@/assets/images/touxiang.png" class="user-avatar" alt="User" />
-            <div class="user-arrows">
-              <el-icon><CaretTop /></el-icon>
-              <el-icon><CaretBottom /></el-icon>
-            </div>
+            <span class="user-name-text">张三</span>
           </div>
           <div class="footer-actions">
-            <el-tooltip content="回到首页" placement="top">
-              <div class="action-item" @click="goHome">
-                <el-icon><HomeFilled /></el-icon>
-              </div>
-            </el-tooltip>
             <el-tooltip content="个人中心" placement="top">
               <div class="action-item" @click="goUserCenter">
                 <el-icon><User /></el-icon>
@@ -64,15 +56,15 @@
                         <h1>{{ supplierInfo.supplierName }}</h1>
                       </div>
                       <div class="stats-line">
-                         <span class="stat-tag">注册时间: {{ supplierInfo.registerTime }}</span>
+                         <span class="stat-tag">入库时间: {{ supplierInfo.entryTime }}</span>
                          <el-divider direction="vertical" />
-                         <span class="stat-tag">联系人: {{ supplierInfo.auditor }}</span>
+                         <span class="stat-tag">联系人: {{ supplierInfo.contactPerson }}</span>
                          <el-divider direction="vertical" />
                          <span class="stat-tag">联系电话: {{ supplierInfo.contactPhone }}</span>
                       </div>
                     </div>
                     <div class="header-actions">
-                        <el-button type="primary" plain icon="Edit" @click="handleEdit">完善信息</el-button>
+                        <!-- <el-button type="primary" plain icon="Edit" @click="handleEdit">完善信息</el-button> -->
                     </div>
                   </div>
                 </div>
@@ -86,16 +78,22 @@
                     </div>
                     <el-descriptions :column="3" border size="small" class="compact-descriptions">
                       <el-descriptions-item label="统一社会信用代码">{{ supplierInfo.creditCode }}</el-descriptions-item>
-                      <el-descriptions-item label="纳税人识别号">{{ supplierInfo.taxId }}</el-descriptions-item>
-                      <el-descriptions-item label="所属行业">{{ supplierInfo.industry }}</el-descriptions-item>
                       <el-descriptions-item label="法定代表人">{{ supplierInfo.legalRep }}</el-descriptions-item>
+                      <el-descriptions-item label="所属行业">{{ supplierInfo.industry }}</el-descriptions-item>
+
                       <el-descriptions-item label="注册资金">{{ supplierInfo.capital }}万</el-descriptions-item>
-                      <el-descriptions-item label="交易身份">{{ supplierInfo.tradeIdentity }}</el-descriptions-item>
-                      <el-descriptions-item label="联系电话">{{ supplierInfo.contactPhone }}</el-descriptions-item>
                       <el-descriptions-item label="机构类型">{{ supplierInfo.orgType }}</el-descriptions-item>
+                      <el-descriptions-item label="入库时间">{{ supplierInfo.entryTime }}</el-descriptions-item>
+
+                      <el-descriptions-item label="供应材料类别">{{ supplierInfo.categoryNames }}</el-descriptions-item>
+                      <el-descriptions-item label="供应品牌">{{ supplierInfo.brandNames }}</el-descriptions-item>
+                      <el-descriptions-item label="所在地区">{{ supplierInfo.regAddress }}</el-descriptions-item>
+
+                      <el-descriptions-item label="联系人">{{ supplierInfo.contactPerson }}</el-descriptions-item>
+                      <el-descriptions-item label="联系电话">{{ supplierInfo.contactPhone }}</el-descriptions-item>
                       <el-descriptions-item label="企业邮箱">{{ supplierInfo.email }}</el-descriptions-item>
-                      <el-descriptions-item label="联系地址" :span="2">{{ supplierInfo.contactAddress }}</el-descriptions-item>
-                      <el-descriptions-item label="注册审核人">{{ supplierInfo.auditor }}</el-descriptions-item>
+
+                      <el-descriptions-item label="联系地址" :span="3">{{ supplierInfo.contactAddress }}</el-descriptions-item>
                     </el-descriptions>
                   </div>
 
@@ -122,16 +120,16 @@
                     <div class="title-with-bar">
                       <h3>供应材料信息</h3>
                       <el-tag size="small" type="info" effect="plain" class="count-tag">
-                        共 {{ materialList.length }} 项
+                        共 {{ filteredMaterialList.length }} 项
                       </el-tag>
                     </div>
                     <div class="filter-mini">
-                       <el-input size="small" placeholder="搜索材料..." prefix-icon="Search" style="width: 200px" />
+                       <el-input v-model="searchKeyword" size="small" placeholder="搜索材料..." prefix-icon="Search" style="width: 200px" clearable />
                     </div>
                   </div>
                   <div class="table-container">
                     <el-table 
-                      :data="materialList" 
+                      :data="filteredMaterialList" 
                       style="width: 100%" 
                       size="small"
                       class="custom-modern-table"
@@ -141,8 +139,8 @@
                       <el-table-column prop="materialName" label="材料名称" min-width="150" show-overflow-tooltip fixed />
                       <el-table-column prop="spec" label="规格型号" min-width="150" show-overflow-tooltip />
                       <el-table-column prop="unit" label="单位" width="60" align="center" />
-                      <el-table-column prop="brand" label="品牌" width="100" show-overflow-tooltip />
-                      <el-table-column prop="quantity" label="数量" width="80" align="right" />
+                      <el-table-column prop="brand" label="品牌" width="80" align="center" show-overflow-tooltip />
+                      <el-table-column prop="quantity" label="数量" width="70" align="center" />
                       <el-table-column prop="priceExclTax" label="不含税价" width="100" align="right">
                         <template #default="{ row }"><span class="price-val">¥{{ row.priceExclTax }}</span></template>
                       </el-table-column>
@@ -331,13 +329,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
   OfficeBuilding, Document, Plus, List, Memo, Edit, Search,
   DataAnalysis, PriceTag, UserFilled, Postcard,
   HomeFilled, User, SwitchButton, CaretTop, CaretBottom,
-  InfoFilled, PhoneFilled
+  InfoFilled, PhoneFilled, DataLine, Collection
 } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { getCategoryTree } from '@/api/material'
@@ -349,8 +347,10 @@ const activeMenu = ref('供应商查询')
 const menuItems = [
   { name: '驾驶舱', label: '驾驶舱', icon: 'DataAnalysis', path: '/workbench?tab=驾驶舱' },
   { name: '材价查询', label: '材价查询', icon: 'Search', path: '/workbench?tab=材价查询' },
-  { name: '采购比价', label: '采购比价', icon: 'PriceTag', path: '/workbench?tab=采购比价' },
-  { name: '供应商查询', label: '供应商查询', icon: 'UserFilled', path: '/workbench?tab=供应商查询' }
+  { name: '智能组价', label: '智能组价', icon: 'PriceTag', path: '/workbench?tab=智能组价' },
+  { name: '采购比价', label: '采购比价', icon: 'DataLine', path: '/workbench?tab=采购比价' },
+  { name: '供应商查询', label: '供应商查询', icon: 'OfficeBuilding', path: '/workbench?tab=供应商查询' },
+  { name: '材料标准', label: '材料标准', icon: 'Collection', path: '/workbench?tab=材料标准' }
 ]
 
 const handleMenuClick = (item) => router.push(item.path)
@@ -365,8 +365,7 @@ const handleLogout = () => {
 // 修改供应商名称为 URL 传递的名称或默认名称
 const supplierInfo = ref({
   supplierName: route.query.name || '宁德时代房地产开发有限公司',
-  registerTime: '2025-07-15',
-  taxId: '91350902678471527P',
+  entryTime: '2025-07-15',
   creditCode: '91350902678471527P',
   capital: '100.00',
   industry: '生态保护和环境治理业',
@@ -374,10 +373,11 @@ const supplierInfo = ref({
   legalRep: '陈宁章',
   email: 'service@gy-ep.com',
   contactPhone: '13250730772',
-  tradeIdentity: '供应商',
   orgType: '境内企业',
   contactAddress: '北京市东城区xxx街道xxx号',
-  auditor: '周丽'
+  contactPerson: '周丽',
+  categoryNames: '通用设备/水泵, 专用设备/水处理设备',
+  brandNames: '凯泉, 威乐, 格兰富'
 })
 
 const attachments = [
@@ -410,6 +410,17 @@ const materialList = ref([
   { materialName: '加氯机', spec: '5kg/h 真空式', unit: '台', brand: '贝尔', quantity: 2, priceExclTax: '35000.00', taxRate: 13, priceInclTax: '39550.00', projectName: '第二水厂应急设备', purchaseTime: '2026-02-02', priceType: '市场价' },
   { materialName: '污泥输送无轴螺旋', spec: 'WLS300-6m', unit: '台', brand: '扬子', quantity: 2, priceExclTax: '22000.00', taxRate: 13, priceInclTax: '24860.00', projectName: '脱水机房改造', purchaseTime: '2026-02-02', priceType: '询价' }
 ])
+
+const searchKeyword = ref('')
+const filteredMaterialList = computed(() => {
+    if (!searchKeyword.value) return materialList.value
+    const lowerKey = searchKeyword.value.toLowerCase()
+    return materialList.value.filter(item => 
+        (item.materialName && item.materialName.toLowerCase().includes(lowerKey)) ||
+        (item.spec && item.spec.toLowerCase().includes(lowerKey)) ||
+        (item.brand && item.brand.toLowerCase().includes(lowerKey))
+    )
+})
 
 // --- 弹窗复用逻辑 ---
 const dialogVisible = ref(false)
@@ -547,7 +558,18 @@ $text-sub: #86868b;
 .workbench-layout { position: relative; z-index: 1; display: flex; gap: 20px; width: 100%; height: 100%; max-width: 1440px; }
 
 .sidebar-glass {
-  width: 200px; background: $glass-bg; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid $glass-border; border-radius: 28px; display: flex; flex-direction: column; align-items: center; padding: 32px 0 4px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  width: 200px;
+  height: 100%;
+  background: $glass-bg;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid $glass-border;
+  border-radius: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 0 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
   .logo-container { flex-shrink: 0; margin-bottom: 32px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 16px;
     .logo-box { width: 72px; height: 72px; background: white; border-radius: 18px; padding: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(55, 124, 253, 0.15); img { width: 100%; height: 100%; object-fit: contain; } }
     .app-name { font-size: 16px; font-weight: 700; color: #1d1d1f; letter-spacing: 1px; margin: 0; text-align: center; }
@@ -560,9 +582,73 @@ $text-sub: #86868b;
       &.active { background: linear-gradient(135deg, $primary-blue 0%, #5c7cfa 100%); color: white; box-shadow: 0 8px 20px rgba($primary-blue, 0.3); transform: translateY(-2px); }
     }
   }
-  .sidebar-footer { flex-shrink: 0; margin-top: auto; width: 100%; padding: 20px 16px; border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;
-    .user-avatar-section { display: flex; align-items: center; gap: 8px; cursor: pointer; .user-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } .user-arrows { display: flex; flex-direction: column; justify-content: center; .el-icon { font-size: 10px; color: $text-sub; height: 8px; display: flex; align-items: center; } } }
-    .footer-actions { display: flex; align-items: center; gap: 8px; .action-item { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: $text-sub; cursor: pointer; &:hover { background: white; color: $primary-blue; box-shadow: 0 4px 10px rgba(0,0,0,0.08); } .el-icon { font-size: 18px; } } }
+  .sidebar-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+    width: 100%;
+    padding: 20px 16px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .user-avatar-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      flex: 1;
+      min-width: 0;
+      
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+        flex-shrink: 0;
+        &:hover { transform: scale(1.05); }
+      }
+      
+      .user-name-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 80px;
+      }
+    }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      
+      .action-item {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: $text-sub;
+        cursor: pointer;
+        transition: all 0.2s;
+        
+        &:hover {
+          background: white;
+          color: $primary-blue;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+          transform: translateY(-2px);
+        }
+        
+        .el-icon { font-size: 18px; }
+      }
+    }
   }
 }
 
@@ -591,7 +677,7 @@ $text-sub: #86868b;
   align-items: stretch;
 }
 .info-section {
-  min-height: 270px; /* 缩短 1/4 (从 360px -> 270px) */
+  min-height: 220px; /* 缩短高度 (从 270px -> 220px) */
   display: flex;
   flex-direction: column;
 }
@@ -615,13 +701,13 @@ $text-sub: #86868b;
     background: rgba(0,0,0,0.01) !important; 
     font-size: 12px;
     white-space: nowrap;
-    padding: 10px 16px !important; /* 缩回内边距以降低高度 */
+    padding: 6px 12px !important; /* 进一步缩回内边距以降低高度 */
   }
   :deep(.el-descriptions__content) { 
     color: #1d1d1f; 
     font-weight: 500; 
     font-size: 13px;
-    padding: 10px 16px !important; /* 缩回内边距以降低高度 */
+    padding: 6px 12px !important; /* 进一步缩回内边距以降低高度 */
   }
 }
 

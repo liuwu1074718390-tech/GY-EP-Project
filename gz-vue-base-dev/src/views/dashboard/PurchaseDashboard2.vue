@@ -535,6 +535,14 @@ function handleResize() {
   categoryChart?.resize()
   priceChart?.resize()
   supplierChart?.resize()
+  
+  // 修复宽窄屏切换后可能的滚动位置残留导致底部被遮挡
+  if (window.innerWidth > 1240) {
+    const el = document.querySelector('.main-content')
+    if (el && el.scrollTop !== 0) {
+      el.scrollTop = 0
+    }
+  }
 }
 
 // 生命周期
@@ -561,15 +569,16 @@ onUnmounted(() => {
 .purchase-dashboard {
   padding: 0;
   background: transparent;
-  min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  gap: 16px; // 统一间距 16px，利用 parent gap 确保绝对一致
   
   .dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 0 16px 16px 16px;
+    margin: 0;
     padding: 16px 20px;
     background: #fff;
     border-radius: 8px;
@@ -613,10 +622,10 @@ onUnmounted(() => {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
-    margin: 0 16px 16px 16px;
+    margin: 0;
     min-width: 0;
     overflow-x: auto;
-    padding-bottom: 4px;
+    padding-bottom: 0; // 移除底部内边距，确保间距精准对齐
     flex-shrink: 0;
     
     /* 滚动条样式优化 */
@@ -735,7 +744,8 @@ onUnmounted(() => {
     display: grid;
     grid-template-columns: 60fr 40fr;
     gap: 16px;
-    margin: 0 16px 16px 16px;
+    margin: 0; 
+    padding-bottom: 2px; // 留出极小间隙，防止容器 overflow:hidden 在亚像素渲染时切掉圆角边框
     flex: 1;
     min-height: 0;
     
@@ -817,11 +827,11 @@ onUnmounted(() => {
   .purchase-dashboard {
     .kpi-cards {
       padding-bottom: 0;
-      margin-bottom: 12px;
+      margin-bottom: 0; // 统一由父级 gap 控制
     }
     
     .dashboard-content {
-      gap: 12px;
+      gap: 16px;
       margin-bottom: 12px;
       
       .chart-card {
@@ -839,7 +849,7 @@ onUnmounted(() => {
       
       .content-left,
       .content-right {
-        gap: 12px;
+        gap: 16px;
       }
     }
   }
@@ -849,13 +859,13 @@ onUnmounted(() => {
 @media screen and (max-height: 768px) {
   .purchase-dashboard {
     .dashboard-header {
-      margin-bottom: 12px;
+      margin-bottom: 0;
       padding: 12px 16px;
     }
     
     .kpi-cards {
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 0;
       
       .kpi-card {
         padding: 12px;
@@ -864,7 +874,7 @@ onUnmounted(() => {
 
     .dashboard-content {
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 0;
       
       .chart-card {
         padding: 10px;
@@ -896,6 +906,31 @@ onUnmounted(() => {
       .content-left,
       .content-right {
         gap: 8px;
+      }
+    }
+  }
+}
+
+// 响应式宽度调整 - 处理堆叠布局
+@media screen and (max-width: 1240px) {
+  .purchase-dashboard {
+    height: auto;
+    overflow: visible;
+
+    .dashboard-content {
+      display: flex;
+      flex-direction: column;
+      flex: none;
+      
+      .content-left,
+      .content-right {
+        flex: none;
+        width: 100%;
+      }
+
+      .chart-card.flex-card {
+        flex: none;
+        height: 260px;
       }
     }
   }

@@ -94,25 +94,43 @@ defineExpose({
 </script>
 
 <style lang="scss">
-// 覆盖 Dialog 样式使其更美观
 .user-profile-dialog {
-  border-radius: 20px;
+  display: flex !important;
+  flex-direction: column;
+  margin-top: 10vh !important;
+  max-height: 80vh;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   
   .el-dialog__header {
     margin: 0;
-    padding: 20px 24px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-    border-bottom: 1px solid #eee;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
     
     .el-dialog__title {
-      font-weight: 700;
-      color: #333;
+      font-weight: 600;
+      font-size: 15px;
+      color: #1d1d1f;
+    }
+
+    .el-dialog__headerbtn {
+      top: 14px;
+      right: 16px;
+      font-size: 18px;
+      .el-dialog__close {
+        color: #909399;
+        font-weight: 700;
+        transition: all 0.2s;
+        &:hover { color: #f56c6c; transform: rotate(90deg); }
+      }
     }
   }
   
   .el-dialog__body {
     padding: 0;
+    overflow: hidden;
   }
 }
 </style>
@@ -120,37 +138,38 @@ defineExpose({
 <style lang="scss" scoped>
 .profile-container {
   display: flex;
-  height: 550px;
-  background-color: #f9fbfd;
+  height: 520px;
+  background-color: #ffffff;
 }
 
 .profile-sidebar {
-  width: 280px;
-  background: white;
+  width: 260px;
+  background: #f7f8fa;
   border-right: 1px solid #f0f0f0;
   display: flex;
   flex-direction: column;
-  padding: 30px 20px;
+  padding: 24px 16px;
   align-items: center;
   
   .avatar-section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
     
     .user-name {
-      margin-top: 15px;
-      font-size: 20px;
+      margin-top: 12px;
+      font-size: 16px;
       font-weight: 700;
-      color: #333;
+      color: #1d1d1f;
     }
     
     .user-role-badges {
-      margin-top: 8px;
+      margin-top: 6px;
       .role-tag {
         background-color: #377cfd;
-        border-color: #377cfd;
+        border-radius: 4px;
+        font-size: 11px;
       }
     }
   }
@@ -159,27 +178,28 @@ defineExpose({
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     
     .meta-item {
       display: flex;
       align-items: center;
-      padding: 12px 16px;
-      background: #f8fafc;
-      border-radius: 12px;
-      color: #555;
-      font-size: 14px;
-      transition: all 0.3s;
+      padding: 10px 12px;
+      background: #ffffff;
+      border: 1px solid #f0f0f0;
+      border-radius: 6px;
+      color: #606266;
+      font-size: 13px;
+      transition: all 0.2s;
       
       &:hover {
-        background: #f0f4f8;
-        transform: translateX(4px);
+        border-color: #377cfd;
+        background: #f0f7ff;
       }
       
       .el-icon {
-        font-size: 18px;
+        font-size: 16px;
         color: #377cfd;
-        margin-right: 12px;
+        margin-right: 10px;
       }
       
       span {
@@ -193,22 +213,18 @@ defineExpose({
 
 .profile-content {
   flex: 1;
-  padding: 20px 30px;
+  padding: 16px 24px;
   background-color: #fff;
+  overflow: hidden;
   
   :deep(.custom-profile-tabs) {
     height: 100%;
     display: flex;
     flex-direction: column;
     
-    .el-tabs__nav-wrap::after {
-      height: 1px;
-      background-color: #f0f0f0;
-    }
-    
     .el-tabs__item {
-      font-size: 16px;
-      height: 50px;
+      font-size: 14px;
+      height: 40px;
       
       &.is-active {
         color: #377cfd;
@@ -224,16 +240,10 @@ defineExpose({
     .tab-scroll-content {
       height: 100%;
       overflow-y: auto;
-      padding-right: 10px;
-      padding-top: 10px;
+      padding-top: 8px;
       
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-      &::-webkit-scrollbar-thumb {
-        background: #e0e0e0;
-        border-radius: 3px;
-      }
+      &::-webkit-scrollbar { width: 4px; }
+      &::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 10px; }
     }
   }
 }

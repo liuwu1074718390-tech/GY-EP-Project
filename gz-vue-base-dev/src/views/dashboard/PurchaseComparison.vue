@@ -93,7 +93,7 @@
             stripe
             :row-class-name="getRowClassName"
             style="width: 100%; font-size: 13px"
-            :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600', fontSize: '13px' }"
+            :header-cell-style="{ background: '#f7f8fa', color: '#1d1d1f', fontWeight: '600', fontSize: '13px' }"
           >
             <el-table-column label="投标企业" prop="bidder" min-width="180" show-overflow-tooltip />
             <el-table-column label="品牌" prop="brand" width="100" show-overflow-tooltip />
@@ -203,34 +203,47 @@
               :data="gzMaterialPriceReference" 
               stripe
               style="width: 100%; font-size: 13px"
-              :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600', fontSize: '13px' }"
+              :header-cell-style="{ background: '#f7f8fa', color: '#1d1d1f', fontWeight: '600', fontSize: '13px' }"
             >
-              <el-table-column label="序号" type="index" width="60" align="center" />
-              <el-table-column label="材料名称" min-width="120" show-overflow-tooltip>
+              <el-table-column label="序号" type="index" width="55" align="center" fixed />
+              <el-table-column label="材料名称" width="100" show-overflow-tooltip fixed>
                 <template #default="{ row }">
                   <span class="material-link">{{ row.materialName }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="规格型号" prop="specification" min-width="150" show-overflow-tooltip />
-              <el-table-column label="单位" prop="unit" width="70" align="center" />
-              <el-table-column label="不含税价(元)" prop="priceExcludingTax" width="120" align="right">
+              <el-table-column label="规格型号" min-width="120">
+                <template #default="{ row }">
+                  <el-tooltip 
+                    :content="row.specification" 
+                    placement="top" 
+                    effect="dark"
+                    :show-after="500"
+                  >
+                    <span style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default;">
+                      {{ row.specification }}
+                    </span>
+                  </el-tooltip>
+                </template>
+              </el-table-column>
+              <el-table-column label="单位" prop="unit" width="50" align="center" />
+              <el-table-column label="不含税价(元)" prop="priceExcludingTax" width="105" align="right">
                 <template #default="{ row }">
                   <strong>{{ row.priceExcludingTax.toLocaleString() }}</strong>
                 </template>
               </el-table-column>
-              <el-table-column label="税率" prop="taxRate" width="80" align="center">
+              <el-table-column label="税率" prop="taxRate" width="55" align="center">
                 <template #default="{ row }">
                   {{ row.taxRate }}%
                 </template>
               </el-table-column>
-              <el-table-column label="含税价(元)" prop="priceIncludingTax" width="120" align="right">
+              <el-table-column label="含税价(元)" prop="priceIncludingTax" width="105" align="right">
                 <template #default="{ row }">
                   {{ row.priceIncludingTax.toLocaleString() }}
                 </template>
               </el-table-column>
-              <el-table-column label="发布日期" prop="period" width="110" align="center" />
-              <el-table-column label="地区" prop="region" width="100" align="center" />
-              <el-table-column label="数据渠道" prop="source" width="110" align="center" />
+              <el-table-column label="发布日期" prop="period" width="90" align="center" />
+              <el-table-column label="地区" prop="region" width="70" align="center" />
+              <el-table-column label="数据渠道" prop="source" width="90" align="center" />
             </el-table>
           </div>
         </section>
@@ -252,7 +265,7 @@
       title="选择参考项目"
       width="600px"
       :close-on-click-modal="false"
-      class="project-selection-dialog"
+      class="custom-glass-dialog"
     >
       <!-- 搜索框 -->
       <el-input
@@ -260,7 +273,7 @@
         placeholder="搜索项目名称"
         prefix-icon="Search"
         clearable
-        style="margin-bottom: 16px"
+        style="margin-bottom: 20px"
       />
 
       <!-- 项目列表 -->
@@ -274,12 +287,13 @@
           }]"
           @click="isProjectSelectable(project.id) && handleProjectToggle(project.id)"
         >
-          <el-checkbox 
-            :model-value="isProjectSelected(project.id)"
-            :disabled="!isProjectSelectable(project.id)"
-            @click.stop
-            @change="handleProjectToggle(project.id)"
-          >
+          <div class="project-item-inner">
+            <el-checkbox 
+              :model-value="isProjectSelected(project.id)"
+              :disabled="!isProjectSelectable(project.id)"
+              @click.stop
+              @change="handleProjectToggle(project.id)"
+            />
             <div class="project-info">
               <div class="project-name-text">{{ project.name }}</div>
               <div class="project-meta">
@@ -287,7 +301,7 @@
                 <span>{{ project.materialCount }} 种材料</span>
               </div>
             </div>
-          </el-checkbox>
+          </div>
         </div>
       </div>
 
@@ -297,8 +311,10 @@
       </div>
 
       <template #footer>
-        <el-button @click="projectDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmProjectSelection">确定</el-button>
+        <div class="dialog-footer">
+          <el-button class="btn-cancel" @click="projectDialogVisible = false">取消</el-button>
+          <el-button class="btn-submit" type="primary" @click="confirmProjectSelection">确定</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -644,19 +660,19 @@ $text-main: #1d1d1f;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid $glass-border;
-    border-radius: 16px;
+    border-radius: 8px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
-    padding: 16px 20px;
+    padding: 12px 16px;
     
     &.compact {
-      padding: 12px 20px;
+      padding: 10px 16px;
     }
 
     h3 {
       font-size: 14px;
       font-weight: 700;
       color: $text-main;
-      margin: 0 0 16px 0;
+      margin: 0 0 10px 0;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -675,12 +691,15 @@ $text-main: #1d1d1f;
   .main-layout {
     flex: 1;
     display: flex;
-    gap: 16px;
+    gap: 12px;
     min-height: 0;
     overflow: hidden;
+    align-items: stretch;
 
     .tree-panel {
       width: 300px;
+      height: 100%;
+      min-height: 0;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -708,6 +727,7 @@ $text-main: #1d1d1f;
 
       .el-tree {
         flex: 1;
+        min-height: 0;
         overflow-y: auto;
         font-size: 13px;
 
@@ -759,7 +779,7 @@ $text-main: #1d1d1f;
       min-height: 0;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
       overflow-y: auto;
       min-width: 0;
 
@@ -774,7 +794,7 @@ $text-main: #1d1d1f;
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 8px; // 减小标题与规格区的间距
+          margin-bottom: 4px; // 减小标题与规格区的间距
 
           h2 {
             font-size: 18px; // 稍微减小标题字号
@@ -883,12 +903,12 @@ $text-main: #1d1d1f;
         .price-cards {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 16px;
+          gap: 12px;
           width: 100%;
           box-sizing: border-box;
 
           .price-card {
-            padding: 16px;
+            padding: 12px;
             background: white;
             border-radius: 12px;
             border: 1px solid #e4e7ed;
@@ -900,7 +920,7 @@ $text-main: #1d1d1f;
 
             &:hover {
               box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-              transform: translateY(-4px);
+              transform: translateY(-2px);
             }
 
             &.current-project {
@@ -912,7 +932,7 @@ $text-main: #1d1d1f;
               display: flex;
               align-items: center;
               gap: 6px;
-              margin-bottom: 8px;
+              margin-bottom: 4px;
 
               .project-icon {
                 font-size: 16px;
@@ -929,8 +949,8 @@ $text-main: #1d1d1f;
               font-size: 13px;
               font-weight: 600;
               color: $text-main;
-              margin-bottom: 8px;
-              min-height: 36px;
+              margin-bottom: 4px;
+              min-height: 32px;
               overflow: hidden;
               text-overflow: ellipsis;
               display: -webkit-box;
@@ -942,7 +962,7 @@ $text-main: #1d1d1f;
               font-size: 20px;
               font-weight: 700;
               color: #303133;
-              margin-bottom: 8px;
+              margin-bottom: 4px;
             }
 
             .change-rate {
@@ -951,7 +971,7 @@ $text-main: #1d1d1f;
               gap: 4px;
               font-size: 14px;
               font-weight: 600;
-              margin-bottom: 8px;
+              margin-bottom: 4px;
 
               &.rate-up {
                 color: #f56c6c;
@@ -1054,8 +1074,8 @@ $text-main: #1d1d1f;
               font-size: 13px;
               font-weight: 600;
               color: $text-main;
-              margin-bottom: 8px;
-              min-height: 36px;
+              margin-bottom: 4px;
+              min-height: 32px;
             }
 
             .price-amount {
@@ -1122,7 +1142,7 @@ $text-main: #1d1d1f;
 }
 
 // 项目选择对话框样式
-:deep(.project-selection-dialog) {
+:deep(.custom-glass-dialog) {
   .el-dialog__body {
     padding: 20px;
   }
@@ -1146,67 +1166,69 @@ $text-main: #1d1d1f;
     }
     
     .project-item {
-      padding: 12px;
-      border: 1px solid #e4e7ed;
+      padding: 16px; // 增加内边距
+      border: 1px solid #f0f0f0;
       border-radius: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 12px; // 增加项之间的间距
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.2s;
       background: white;
       
       &:hover:not(.disabled) {
-        background: #f5f7fa;
-        border-color: $primary-blue;
-        box-shadow: 0 2px 8px rgba($primary-blue, 0.1);
+        background: #f8faff;
+        border-color: #377cfd;
+        box-shadow: 0 4px 12px rgba(55, 124, 253, 0.08);
       }
       
       &.selected {
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-        border-color: $primary-blue;
+        background: #f0f7ff;
+        border-color: #377cfd;
       }
       
       &.disabled {
         opacity: 0.5;
         cursor: not-allowed;
-        
-        &:hover {
-          background: white;
-          border-color: #e4e7ed;
-          box-shadow: none;
-        }
       }
       
-      .el-checkbox {
-        width: 100%;
-        
-        :deep(.el-checkbox__label) {
-          width: 100%;
+      .project-item-inner {
+        display: flex;
+        align-items: flex-start; // 顶部对齐
+
+        :deep(.el-checkbox) {
+          margin-top: 2px; // 复选框稍微下移一点，对齐首行文字
+          height: auto;
         }
       }
       
       .project-info {
-        margin-left: 8px;
+        margin-left: 14px; // 增加复选框与文字的间距
+        flex: 1;
         
         .project-name-text {
           font-size: 14px;
           font-weight: 600;
-          color: $text-main;
-          margin-bottom: 4px;
+          color: #1d1d1f;
+          margin-bottom: 6px; // 增加标题与副标题的间距
+          line-height: 1.4;
         }
         
         .project-meta {
           display: flex;
           gap: 16px;
           font-size: 12px;
-          color: #909399;
+          color: #86868b;
           
           span {
             display: flex;
             align-items: center;
             
             &:before {
-              content: '•';
-              margin-right: 4px;
+              content: '';
+              width: 3px;
+              height: 3px;
+              border-radius: 50%;
+              background: #d1d1d6;
+              margin-right: 6px;
             }
           }
         }
@@ -1249,6 +1271,86 @@ $text-main: #1d1d1f;
         text-decoration: underline;
       }
     }
+  }
+}
+
+// 弹窗样式优化
+:deep(.el-overlay) {
+  overflow: hidden !important;
+}
+
+:deep(.custom-glass-dialog) {
+  display: flex !important;
+  flex-direction: column;
+  margin-top: 12vh !important; // 居中一些
+  margin-bottom: 8vh !important;
+  max-height: 75vh;
+  
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  .el-dialog__header {
+    margin: 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    .el-dialog__title {
+      font-weight: 600;
+      font-size: 15px;
+      color: #1d1d1f;
+    }
+    .el-dialog__headerbtn {
+      top: 14px;
+      right: 16px;
+      font-size: 18px;
+      .el-dialog__close {
+        color: #909399;
+        font-weight: 700;
+        transition: all 0.2s;
+        &:hover { color: #f56c6c; transform: rotate(90deg); }
+      }
+    }
+  }
+
+  .el-dialog__body {
+    padding: 16px;
+    overflow: hidden; // 移除外侧不必要的滚动条
+    flex: 1;
+    font-size: 13px;
+    &::-webkit-scrollbar { width: 5px; }
+    &::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 10px; }
+  }
+
+  .el-dialog__footer {
+    padding: 10px 16px 16px;
+    border-top: 1px solid #f0f0f0;
+    background: #ffffff;
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  .btn-cancel {
+    border-radius: 4px;
+    padding: 8px 20px;
+    border: 1px solid #dcdfe6;
+    background: #ffffff;
+    color: #606266;
+    height: 32px;
+    &:hover { background: #f5f7fa; color: #1d1d1f; }
+  }
+  .btn-submit {
+    border-radius: 4px;
+    padding: 8px 24px;
+    background: $primary-blue;
+    border: none;
+    font-weight: 500;
+    color: #ffffff;
+    height: 32px;
+    &:hover { background: #5c96ff; }
   }
 }
 </style>

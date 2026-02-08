@@ -16,7 +16,7 @@
           <div 
             v-for="item in menuItems" 
             :key="item.name" 
-            :class="['menu-item', { active: activeMenu === item.name }]"
+            :class="['menu-item', { active: activeMenu === item.name || (activeMenu === '材价详情' && item.name === '材价查询') || (activeMenu === '组价详情' && item.name === '智能组价') }]"
             @click="handleMenuClick(item.name)"
           >
             <el-icon><component :is="item.icon" /></el-icon>
@@ -58,7 +58,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { 
-  DataAnalysis, TrendCharts, Search, Collection, Postcard, 
+  DataAnalysis, DataLine, Search, Collection, Postcard, 
   OfficeBuilding, PriceTag,
   HomeFilled, User, SwitchButton, CaretTop, CaretBottom,
   UserFilled
@@ -69,6 +69,9 @@ import MaterialDashboard from './MaterialDashboard.vue'
 import PurchaseDashboard2 from './PurchaseDashboard2.vue'
 import MaterialStandard from '../system/MaterialStandard.vue'
 import SupplierQuery from '../system/SupplierQuery.vue'
+import MaterialDetail from './MaterialDetail.vue'
+import SmartPricing from './SmartPricing.vue'
+import PricingDetail from './PricingDetail.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import useUserStore from '@/store/modules/user'
@@ -108,8 +111,11 @@ const componentMap = {
   '驾驶舱2': PurchaseDashboard2,
   '材价查询': MaterialPriceQuery,
   '采购比价': PurchaseComparison,
-  '材料标准': MaterialStandard,
   '供应商查询': SupplierQuery,
+  '材料标准': MaterialStandard,
+  '材价详情': MaterialDetail,
+  '智能组价': SmartPricing,
+  '组价详情': PricingDetail,
   // 后续可继续添加其他模块
   // '成员管理': MemberManagement,
   // '企业信息': CompanyInfo,
@@ -117,7 +123,7 @@ const componentMap = {
 
 // 初始化 activeMenu，优先从 URL query 读取，实现刷新保持状态
 const initialTab = route.query.tab
-const isValidMenu = (name) => !!componentMap[name] || ['材料标准', '供应商查询'].includes(name)
+const isValidMenu = (name) => !!componentMap[name] || ['材料标准', '供应商查询', '材价详情', '智能组价', '组价详情'].includes(name)
 const activeMenu = ref(isValidMenu(initialTab) ? initialTab : '驾驶舱')
 
 // 当前视图组件
@@ -126,8 +132,10 @@ const currentViewComponent = computed(() => componentMap[activeMenu.value])
 const menuItems = [
   { name: '驾驶舱', label: '驾驶舱', icon: 'DataAnalysis' },
   { name: '材价查询', label: '材价查询', icon: 'Search' },
-  { name: '采购比价', label: '采购比价', icon: 'PriceTag' },
+  { name: '智能组价', label: '智能组价', icon: 'PriceTag' },
+  { name: '采购比价', label: '采购比价', icon: 'DataLine' },
   { name: '供应商查询', label: '供应商查询', icon: 'OfficeBuilding' },
+  { name: '材料标准', label: '材料标准', icon: 'Collection' },
 ]
 
 // 菜单点击处理
@@ -182,6 +190,7 @@ $text-sub: #86868b;
   position: relative;
   z-index: 1;
   display: flex;
+  align-items: stretch;
   gap: 20px;
   width: 100%;
   height: 100%;
@@ -191,20 +200,21 @@ $text-sub: #86868b;
 // 侧边栏样式
 .sidebar-glass {
   width: 200px;
+  height: 100%;
   background: $glass-bg;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid $glass-border;
-  border-radius: 28px;
+  border-radius: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 0 4px;
+  padding: 20px 0 4px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 
   .logo-container {
     flex-shrink: 0; // 防止 Logo 被压缩
-    margin-bottom: 32px;
+    margin-bottom: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -212,11 +222,11 @@ $text-sub: #86868b;
     padding: 0 16px;
 
     .logo-box {
-      width: 72px;
-      height: 72px;
+      width: 50px;
+      height: 50px;
       background: white;
       border-radius: 18px;
-      padding: 10px;
+      padding: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -255,9 +265,10 @@ $text-sub: #86868b;
     overflow-y: auto; // 关键：内容溢出时滚动
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     width: 100%;
-    padding: 0 12px;
+    padding: 10px 12px 0; // 增加顶部内边距，防止第一个菜单项被裁剪
+    
     
     // 隐藏滚动条
     &::-webkit-scrollbar {
@@ -271,14 +282,14 @@ $text-sub: #86868b;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 15px 2px 5px;
+      padding: 13px 2px 7px;
       border-radius: 16px;
       cursor: pointer;
       transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
       color: $text-sub;
 
       .el-icon {
-        font-size: 24px;
+        font-size: 20px;
         margin-bottom: 4px;
         transition: transform 0.3s;
       }
@@ -313,7 +324,7 @@ $text-sub: #86868b;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 16px;
+    padding: 10px 16px;
     
     .user-avatar-section {
       display: flex;
@@ -376,7 +387,7 @@ $text-sub: #86868b;
 }
 
 // 主内容样式
-.main-content {
+  .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -384,6 +395,12 @@ $text-sub: #86868b;
   min-width: 0; // 防止 flex 溢出
   min-height: 0; // 关键：允许内容溢出时正确处理
   overflow: auto; // 允许滚动
+
+  // 让动态组件填满主区域高度
+  > :first-child {
+    flex: 1;
+    min-height: 0;
+  }
 
   .workbench-home-scroll {
     flex: 1;
@@ -592,4 +609,3 @@ $text-sub: #86868b;
   }
 }
 </style>
-

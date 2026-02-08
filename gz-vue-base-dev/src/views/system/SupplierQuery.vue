@@ -8,16 +8,7 @@
           <h3>材料分类库</h3>
         </div>
         <div class="header-action">
-          <el-tooltip content="编辑分类" placement="top">
-            <el-button 
-              circle
-              size="small"
-              icon="Edit" 
-              @click="handleManageCategory"
-              class="edit-btn"
-              v-if="!sidebarCollapsed"
-            />
-          </el-tooltip>
+
           <el-tooltip :content="isExpandAll ? '收起全部' : '展开全部'" placement="top">
             <el-button 
               circle
@@ -124,12 +115,14 @@
 
       <!-- 数据表格 -->
       <section class="table-container-glass">
-        <el-table
-          :data="tableData"
-          style="width: 100%"
-          v-loading="loading"
-          class="custom-modern-table"
-        >
+        <div class="table-body">
+          <el-table
+            :data="tableData"
+            style="width: 100%"
+            height="100%"
+            v-loading="loading"
+            class="custom-modern-table"
+          >
           <el-table-column type="index" label="序号" width="60" align="center" fixed="left">
             <template #default="{ $index }">
               <span class="index-badge">{{ $index + 1 }}</span>
@@ -181,7 +174,8 @@
               </div>
             </template>
           </el-table-column>
-        </el-table>
+          </el-table>
+        </div>
 
         <!-- 分页器 -->
         <div class="pagination-wrapper">
@@ -360,11 +354,7 @@
         </div>
       </template>
     </el-dialog>
-    <!-- 材料分类管理弹窗 -->
-    <CategoryManageModal 
-      ref="categoryManageRef" 
-      @update="handleCategoryUpdate" 
-    />
+
   </div>
 </template>
 
@@ -380,8 +370,7 @@ import {
   updateSupplier,
   deleteSupplier
 } from '@/api/supplier'
-import { FolderOpened, Search, Refresh, Plus, Edit, EditPen, Delete, ArrowUp, ArrowDown, InfoFilled, PhoneFilled, OfficeBuilding } from '@element-plus/icons-vue'
-import CategoryManageModal from './CategoryManageModal.vue'
+import { FolderOpened, Search, Refresh, Plus, EditPen, Delete, ArrowUp, ArrowDown, InfoFilled, PhoneFilled, OfficeBuilding } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -430,20 +419,6 @@ const categoryTreeRef = ref()
 const filteredCategoryTree = ref([])
 const isExpandAll = ref(true)
 const expandedKeys = ref([])
-const categoryManageRef = ref(null)
-
-// 打开分类管理弹窗
-const handleManageCategory = () => {
-  categoryManageRef.value.open(categoryTree.value)
-}
-
-// 分类数据更新回调
-const handleCategoryUpdate = (newTree) => {
-  categoryTree.value = newTree
-  filteredCategoryTree.value = newTree
-  // 这里可以视情况决定是否需要重新加载数据，或者只是更新本地状态
-  ElMessage.success('分类数据同步成功')
-}
 
 const toggleExpandAll = () => {
   isExpandAll.value = !isExpandAll.value
@@ -840,6 +815,8 @@ $border-glass: rgba(255, 255, 255, 0.5);
   width: 100%;
   padding: 0;
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
 // 玻璃拟态卡片通用
@@ -848,13 +825,14 @@ $border-glass: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid $border-glass;
-  border-radius: 24px;
+  border-radius: 8px;
 }
 
 // 左侧分类树
 .category-sidebar-glass {
   @extend .glass-panel;
   width: $sidebar-width;
+  height: 100%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -914,7 +892,7 @@ $border-glass: rgba(255, 255, 255, 0.5);
       align-items: center;
     }
 
-    .edit-btn, .expand-btn, .toggle-btn {
+    .expand-btn, .toggle-btn {
       color: #86868b;
       background: rgba(0, 0, 0, 0.03);
       border: none;
@@ -949,29 +927,38 @@ $border-glass: rgba(255, 255, 255, 0.5);
     :deep(.el-tree) {
       background: transparent;
       .el-tree-node__content {
-        height: 32px;
+        height: 34px;
         border-radius: 8px;
-        margin-bottom: 2px;
-        &:hover { background: rgba(0, 0, 0, 0.03); }
+        margin-bottom: 4px;
+        transition: all 0.2s ease;
+        &:hover { background: rgba($primary-blue, 0.05); }
       }
+
       .el-tree-node.is-current > .el-tree-node__content {
-        background: $primary-blue;
-        color: white;
-        .node-prefix { background: rgba(255,255,255,0.2) !important; color: white !important; }
+        background: rgba($primary-blue, 0.15) !important;
+        border-right: 4px solid $primary-blue;
+        .node-label { 
+          color: $primary-blue; 
+          font-weight: 700; 
+        }
+        .node-prefix { 
+          color: $primary-blue !important; 
+          font-weight: 700;
+          opacity: 1;
+        }
       }
     }
 
     .custom-tree-node {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       font-size: 13px;
-      position: relative;
       
       .node-prefix {
         font-family: 'Monaco', monospace;
         font-size: 11px;
-        font-weight: 500;
+        font-weight: 600;
         color: #8e8e93;
         min-width: 24px;
         transition: all 0.3s;
@@ -981,13 +968,6 @@ $border-glass: rgba(255, 255, 255, 0.5);
         color: #1d1d1f;
         transition: all 0.3s;
       }
-    }
-
-    :deep(.el-tree-node.is-current) > .el-tree-node__content {
-      background: rgba($primary-blue, 0.08) !important;
-      border-right: 3px solid $primary-blue;
-      .node-label { color: $primary-blue; font-weight: 700; }
-      .node-prefix { color: $primary-blue; font-weight: 700; }
     }
   }
 }
@@ -999,6 +979,8 @@ $border-glass: rgba(255, 255, 255, 0.5);
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   transition: all 0.3s ease;
 }
 
@@ -1053,17 +1035,24 @@ $border-glass: rgba(255, 255, 255, 0.5);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
+
+  .table-body {
+    flex: 1;
+    min-height: 0;
+  }
 
   .custom-modern-table {
     --el-table-border-color: rgba(0,0,0,0.03);
     
     :deep(th.el-table__cell) {
+      background-color: #f7f8fa !important;
       color: #1d1d1f;
-      font-weight: 700;
-      border-bottom: 2px solid rgba(0,0,0,0.05);
-      padding: 10px 0;
-      background-color: white; // 显式设置表头背景
+      font-weight: 600;
+      border-bottom: 1px solid #f0f0f0;
+      padding: 8px 0;
+      font-size: 13px;
     }
 
     :deep(td.el-table__cell) {
@@ -1123,10 +1112,13 @@ $border-glass: rgba(255, 255, 255, 0.5);
         color: #1d1d1f;
         
         &.link-text {
+          color: $primary-blue;
           cursor: pointer;
-          transition: color 0.2s;
+          transition: all 0.2s;
+          
           &:hover {
-            color: $primary-blue;
+            color: darken($primary-blue, 15%);
+            text-decoration: underline;
           }
         }
       }
@@ -1176,85 +1168,81 @@ $border-glass: rgba(255, 255, 255, 0.5);
   }
 }
 
-// 弹窗样式
-:deep(.el-dialog) {
-  border-radius: 28px;
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.8);
-  box-shadow: 0 32px 64px rgba(0,0,0,0.15);
-
-  .el-dialog__header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding: 24px 32px;
-    .el-dialog__title { font-weight: 700; color: #1d1d1f; }
-  }
-
-  .el-form-item__label { font-weight: 600; color: #1d1d1f; font-size: 13px; }
+// 弹窗样式优化
+:deep(.el-overlay) {
+  overflow: hidden !important;
 }
 
-// 弹窗高级样式
 :deep(.custom-glass-dialog) {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 20px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+  display: flex !important;
+  flex-direction: column;
+  margin-top: 8vh !important;
+  margin-bottom: 8vh !important;
+  max-height: 84vh;
+  
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 
   .el-dialog__header {
     margin: 0;
-    padding: 16px 24px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
     .el-dialog__title {
-      font-weight: 700;
-      font-size: 18px;
+      font-weight: 600;
+      font-size: 15px;
       color: #1d1d1f;
+    }
+    .el-dialog__headerbtn {
+      top: 14px;
+      right: 16px;
+      font-size: 18px;
+      .el-dialog__close {
+        color: #909399;
+        font-weight: 700;
+        transition: all 0.2s;
+        &:hover { color: #f56c6c; transform: rotate(90deg); }
+      }
     }
   }
 
   .el-dialog__body {
-    padding: 20px 24px;
-    max-height: 75vh;
+    padding: 16px;
     overflow-y: auto;
-    /* 自定义滚动条 */
-    &::-webkit-scrollbar { width: 6px; }
-    &::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+    flex: 1;
+    font-size: 13px;
+    &::-webkit-scrollbar { width: 5px; }
+    &::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 10px; }
   }
 
   .el-dialog__footer {
-    padding: 12px 24px 24px;
-    border-top: none;
-    background: transparent;
+    padding: 10px 16px 16px;
+    border-top: 1px solid #f0f0f0;
+    background: #ffffff;
   }
 }
 
 .form-section {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  }
-
+  margin-bottom: 24px;
   &:last-child { margin-bottom: 0; }
 
   .section-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
-    color: $primary-blue;
-    
-    .el-icon { font-size: 18px; }
+    gap: 10px;
+    margin-bottom: 16px;
+    position: relative;
+    &::before {
+      content: '';
+      width: 4px;
+      height: 16px;
+      background: $primary-blue;
+      border-radius: 2px;
+    }
+    .el-icon { display: none; }
     span {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: #1d1d1f;
     }
@@ -1263,34 +1251,13 @@ $border-glass: rgba(255, 255, 255, 0.5);
 
 .compact-form {
   :deep(.el-form-item) {
-    margin-bottom: 14px;
-    .el-form-item__label {
-      font-weight: 600;
-      color: #1d1d1f;
-      font-size: 13px;
-      white-space: nowrap;
-    }
+    margin-bottom: 18px;
+    .el-form-item__label { font-weight: 500; color: #606266; font-size: 13px; }
     .el-input__inner, .el-textarea__inner {
-      border-radius: 8px;
-      background-color: rgba(255, 255, 255, 0.8);
-      border-color: rgba(0,0,0,0.1);
+      border-radius: 4px;
+      background-color: #ffffff;
+      border-color: #dcdfe6;
     }
-  }
-}
-
-.custom-radio-group {
-  :deep(.el-radio-button__inner) {
-    border-radius: 8px !important;
-    margin-right: 8px;
-    border: 1px solid rgba(0,0,0,0.1) !important;
-    background: rgba(255, 255, 255, 0.5);
-    box-shadow: none !important;
-    transition: all 0.2s;
-    &:hover { color: $primary-blue; }
-  }
-  :deep(.is-active .el-radio-button__inner) {
-    background: $primary-blue !important;
-    border-color: $primary-blue !important;
   }
 }
 
@@ -1298,27 +1265,24 @@ $border-glass: rgba(255, 255, 255, 0.5);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  
   .btn-cancel {
-    border-radius: 12px;
-    padding: 10px 24px;
-    border: 1px solid rgba(0,0,0,0.1);
-    background: transparent;
-    color: #48484a;
-    &:hover { background: rgba(0,0,0,0.05); color: #1d1d1f; }
+    border-radius: 4px;
+    padding: 8px 20px;
+    border: 1px solid #dcdfe6;
+    background: #ffffff;
+    color: #606266;
+    height: 32px;
+    &:hover { background: #f5f7fa; color: #1d1d1f; }
   }
-
   .btn-submit {
-    border-radius: 12px;
-    padding: 10px 30px;
-    background: linear-gradient(135deg, $primary-blue 0%, #5c7cfa 100%);
+    border-radius: 4px;
+    padding: 8px 24px;
+    background: $primary-blue;
     border: none;
-    font-weight: 600;
-    box-shadow: 0 4px 15px rgba($primary-blue, 0.3);
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba($primary-blue, 0.4);
-    }
+    font-weight: 500;
+    color: #ffffff;
+    height: 32px;
+    &:hover { background: #5c96ff; }
   }
 }
 </style>

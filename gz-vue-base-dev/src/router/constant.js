@@ -75,7 +75,7 @@ export default [
 		path: '/material-standard',
 		component: Layout,
 		redirect: '/material/standard',
-		hidden: true,
+		hidden: false,
 		meta: { title: '材料标准', icon: 'goods' },
 		children: [
 			{
@@ -106,5 +106,12 @@ export default [
 		name: 'SupplierDetail',
 		hidden: true,
 		meta: { title: '供应商详情', icon: 'user' }
+	},
+	{
+		path: '/material/detail',
+		component: () => import('@/views/dashboard/MaterialDetail.vue'),
+		name: 'MaterialDetail',
+		hidden: true,
+		meta: { title: '材价详情' }
 	}
 ];

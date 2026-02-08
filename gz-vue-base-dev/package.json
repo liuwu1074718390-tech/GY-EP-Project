@@ -50,7 +50,8 @@
 		"vue-cropper": "1.1.1",
 		"vue-router": "4.2.5",
 		"vue3-puzzle-vcode": "^1.1.7",
-		"vue3-tree-org": "4.1.0-beta.6"
+		"vue3-tree-org": "4.1.0-beta.6",
+		"xlsx": "^0.18.5"
 	},
 	"devDependencies": {
 		"@commitlint/cli": "^19.3.0",

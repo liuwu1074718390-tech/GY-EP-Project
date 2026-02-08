@@ -8,6 +8,26 @@
           <h3>材料分类库</h3>
         </div>
         <div class="header-action">
+          <el-tooltip content="编辑分类" placement="top">
+            <el-button 
+              circle
+              size="small"
+              icon="Edit" 
+              @click="handleManageCategory"
+              class="edit-btn"
+              v-if="!sidebarCollapsed"
+            />
+          </el-tooltip>
+          <el-tooltip :content="isExpandAll ? '收起全部' : '展开全部'" placement="top">
+            <el-button 
+              circle
+              size="small"
+              :icon="isExpandAll ? 'ArrowUp' : 'ArrowDown'" 
+              @click="toggleExpandAll"
+              class="expand-btn"
+              v-if="!sidebarCollapsed"
+            />
+          </el-tooltip>
           <el-button 
             circle
             size="small"
@@ -19,13 +39,27 @@
       </div>
       
       <div v-if="!sidebarCollapsed" class="tree-container-custom">
+        <!-- 分类搜索框 -->
+        <div class="search-box">
+          <el-input
+            v-model="categorySearchText"
+            placeholder="搜索分类..."
+            clearable
+            prefix-icon="Search"
+            size="small"
+            @input="handleCategorySearch"
+          />
+        </div>
+
         <el-tree
-          :data="categoryTree"
+          ref="categoryTreeRef"
+          :data="filteredCategoryTree"
           :props="{ children: 'children', label: 'categoryName' }"
           node-key="id"
           highlight-current
           @node-click="handleCategorySelect"
-          default-expand-all
+          :default-expand-all="true"
+          :filter-node-method="filterNode"
         >
           <template #default="{ node, data }">
             <div class="custom-tree-node">
@@ -102,7 +136,7 @@
           <el-table-column prop="categoryLevel1Name" label="一级分类" width="120" align="center" />
           <el-table-column prop="categoryLevel2Name" label="二级分类" width="120" align="center" />
           <el-table-column prop="categoryLevel3Name" label="三级分类" width="120" align="center" />
-          <el-table-column label="操作" width="140" align="center" fixed="right">
+          <el-table-column label="操作" width="100" align="center" fixed="right">
             <template #default="{ row }">
               <div class="action-btns">
                 <el-button link type="primary" @click="handleEdit(row)">
@@ -214,6 +248,11 @@
         <el-button type="primary" @click="handleSubmit" :loading="submitLoading">提交</el-button>
       </template>
     </el-dialog>
+    <!-- 材料分类管理弹窗 -->
+    <CategoryManageModal 
+      ref="categoryManageRef" 
+      @update="handleCategoryUpdate" 
+    />
   </div>
 </template>
 
@@ -227,7 +266,8 @@ import {
   updateMaterialStandard, 
   deleteMaterialStandard 
 } from '@/api/material'
-import { FolderOpened, Folder, Memo, Top, Bottom, Search, Refresh, Plus, EditPen, Delete } from '@element-plus/icons-vue'
+import { FolderOpened, Folder, Memo, Top, Bottom, Search, Refresh, Plus, Edit, EditPen, Delete, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
+import CategoryManageModal from './CategoryManageModal.vue'
 
 // 侧边栏状态
 const sidebarCollapsed = ref(false)
@@ -239,6 +279,44 @@ const toggleSidebar = () => {
 const categoryTree = ref([])
 const specList = ref([])
 const unitList = ref([])
+
+// 分类树搜索
+const categorySearchText = ref('')
+const categoryTreeRef = ref()
+const filteredCategoryTree = ref([])
+const isExpandAll = ref(true)
+const categoryManageRef = ref(null)
+
+// 打开分类管理弹窗
+const handleManageCategory = () => {
+  categoryManageRef.value.open(categoryTree.value)
+}
+
+// 分类数据更新回调
+const handleCategoryUpdate = (newTree) => {
+  categoryTree.value = newTree
+  filteredCategoryTree.value = newTree
+  ElMessage.success('分类数据同步成功')
+}
+
+const toggleExpandAll = () => {
+  isExpandAll.value = !isExpandAll.value
+  const nodes = categoryTreeRef.value.store._getAllNodes()
+  nodes.forEach(node => {
+    node.expanded = isExpandAll.value
+  })
+}
+
+// 分类树搜索
+const handleCategorySearch = (value) => {
+  categoryTreeRef.value.filter(value)
+}
+
+// 分类树节点过滤
+const filterNode = (value, data) => {
+  if (!value) return true
+  return data.categoryName.includes(value)
+}
 
 // 查询表单
 const queryForm = reactive({
@@ -303,6 +381,7 @@ onMounted(() => {
 const loadCategoryTree = async () => {
   const res = await getCategoryTree()
   categoryTree.value = res.data || res || []
+  filteredCategoryTree.value = categoryTree.value
 }
 
 // 加载规格列表
@@ -343,6 +422,8 @@ const handleReset = () => {
     pageNum: 1,
     pageSize: 20
   })
+  categorySearchText.value = ''
+  filteredCategoryTree.value = categoryTree.value
   handleQuery()
 }
 
@@ -495,11 +576,13 @@ $border-glass: rgba(255, 255, 255, 0.5);
 
 .material-standard-container {
   display: flex;
-  gap: 20px;
+  gap: 12px;
   height: 100%;
   width: 100%;
   padding: 0;
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
 // 玻璃拟态卡片通用
@@ -508,13 +591,14 @@ $border-glass: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid $border-glass;
-  border-radius: 24px;
+  border-radius: 8px;
 }
 
 // 左侧分类树
 .category-sidebar-glass {
   @extend .glass-panel;
   width: $sidebar-width;
+  height: 100%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -524,108 +608,131 @@ $border-glass: rgba(255, 255, 255, 0.5);
 
   &.collapsed {
     width: $sidebar-collapsed-width;
+    
+    .sidebar-header {
+      padding: 16px 0;
+      justify-content: center;
+      
+      .header-content { display: none; }
+    }
   }
 
   .sidebar-header {
-    padding: 24px 20px;
+    padding: 12px 4px 12px 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
 
     .header-content {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
       
-      .title-icon { color: $primary-blue; font-size: 20px; }
-      h3 { margin: 0; font-size: 16px; font-weight: 700; color: #1d1d1f; }
+      .title-icon { color: $primary-blue; font-size: 16px; flex-shrink: 0; }
+      h3 { 
+        margin: 0; 
+        font-size: 13px; 
+        font-weight: 700; 
+        color: #1d1d1f; 
+        overflow: hidden; 
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        letter-spacing: -0.2px;
+      }
     }
 
-    .toggle-btn {
+    .header-action {
+      display: flex;
+      gap: 1px;
+      flex-shrink: 0;
+      margin-left: 2px;
+      align-items: center;
+    }
+
+    .edit-btn, .expand-btn, .toggle-btn {
       color: #86868b;
       background: rgba(0, 0, 0, 0.03);
       border: none;
+      width: 24px !important;
+      height: 24px !important;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      
       &:hover { color: $primary-blue; background: rgba($primary-blue, 0.1); }
+      
+      :deep(.el-icon) {
+        font-size: 13px;
+      }
     }
   }
 
   .tree-container-custom {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 12px;
+    padding: 12px 2px;
     
     &::-webkit-scrollbar { width: 0; }
 
     :deep(.el-tree) {
       background: transparent;
       .el-tree-node__content {
-        height: 40px;
-        border-radius: 12px;
+        height: 34px;
+        border-radius: 8px;
         margin-bottom: 4px;
-        &:hover { background: rgba(0, 0, 0, 0.03); }
+        transition: all 0.2s ease;
+        &:hover { background: rgba($primary-blue, 0.05); }
       }
       .el-tree-node.is-current > .el-tree-node__content {
-        background: $primary-blue;
-        color: white;
-        .node-prefix { background: rgba(255,255,255,0.2) !important; color: white !important; }
+        background: rgba($primary-blue, 0.15) !important;
+        border-right: 4px solid $primary-blue;
+        .node-label { 
+          color: $primary-blue; 
+          font-weight: 700; 
+        }
+        .node-prefix { 
+          color: $primary-blue !important; 
+          font-weight: 700;
+          opacity: 1;
+        }
       }
     }
 
     .custom-tree-node {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      position: relative;
+      gap: 10px;
+      font-size: 13px;
       
       .node-prefix {
         font-family: 'Monaco', monospace;
         font-size: 11px;
-        font-weight: 500;
+        font-weight: 600;
         color: #8e8e93;
         min-width: 24px;
         transition: all 0.3s;
       }
 
       .node-label {
-        color: #3a3a3c;
+        color: #1d1d1f;
         transition: all 0.3s;
-      }
-
-      // 层级符号设计
-      &.level-1 {
-        font-weight: 700;
-        .node-prefix { color: $primary-blue; font-size: 12px; }
-        .node-label { color: #1c1c1e; font-size: 15px; }
-      }
-      
-      &.level-2 {
-        .node-prefix { color: #8e8e93; }
-        &::before {
-          content: '';
-          position: absolute;
-          left: -12px;
-          top: 50%;
-          width: 4px;
-          height: 4px;
-          background: #d1d1d6;
-          border-radius: 50%;
-          transform: translateY(-50%);
-        }
-      }
-
-      &.level-3 {
-        .node-prefix { color: #aeaeb2; font-weight: 400; }
-        .node-label { color: #636366; font-size: 13px; }
       }
     }
 
-    :deep(.el-tree-node.is-current) > .el-tree-node__content {
-      background: rgba($primary-blue, 0.08) !important;
-      border-right: 3px solid $primary-blue;
-      .node-label { color: $primary-blue; font-weight: 700; }
-      .node-prefix { color: $primary-blue; font-weight: 700; }
+    .search-box {
+      margin-bottom: 12px;
+      padding: 0 4px;
     }
   }
 }
@@ -635,15 +742,17 @@ $border-glass: rgba(255, 255, 255, 0.5);
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   transition: all 0.3s ease;
 }
 
 // 筛选面板
 .filter-panel-glass {
   @extend .glass-panel;
-  padding: 16px 24px;
+  padding: 12px 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
   
   .custom-query-form {
@@ -651,15 +760,25 @@ $border-glass: rgba(255, 255, 255, 0.5);
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 12px;
 
-    .filter-inputs { display: flex; flex-wrap: wrap; align-items: center; }
+    .filter-inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
-    :deep(.el-form-item) { margin-bottom: 0; margin-right: 20px; }
+    :deep(.el-form-item) { margin-bottom: 4px; margin-right: 12px; }
+    :deep(.el-form-item__label) {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1d1d1f;
+      padding-right: 8px;
+    }
     :deep(.el-input__wrapper), :deep(.el-select__wrapper) {
-      border-radius: 12px;
+      border-radius: 8px;
       box-shadow: 0 0 0 1px rgba(0,0,0,0.08) inset;
       &:hover { box-shadow: 0 0 0 1px $primary-blue inset; }
+      .el-input__inner, .el-select__placeholder {
+        font-size: 13px;
+        color: #1d1d1f;
+      }
     }
   }
 
@@ -677,26 +796,27 @@ $border-glass: rgba(255, 255, 255, 0.5);
 .table-container-glass {
   @extend .glass-panel;
   flex: 1;
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
 
   .custom-modern-table {
     --el-table-border-color: rgba(0,0,0,0.03);
-    --el-table-header-bg-color: transparent;
-    background: transparent;
     
     :deep(th.el-table__cell) {
-      color: #86868b;
-      font-weight: 700;
-      border-bottom: 2px solid rgba(0,0,0,0.05);
-      padding: 16px 0;
+      background-color: #f7f8fa !important;
+      color: #1d1d1f;
+      font-weight: 600;
+      border-bottom: 1px solid #f0f0f0;
+      padding: 8px 0;
+      font-size: 13px;
     }
 
     :deep(td.el-table__cell) {
-      padding: 16px 0;
+      padding: 10px 0;
     }
 
     .index-badge {
@@ -725,8 +845,13 @@ $border-glass: rgba(255, 255, 255, 0.5);
       display: flex;
       flex-direction: column;
       gap: 4px;
-      .name-text { font-size: 14px; font-weight: 600; color: #1d1d1f; }
+      .name-text { font-size: 13px; font-weight: 600; color: #1d1d1f; }
       .remark-text { font-size: 12px; color: #86868b; }
+    }
+
+    :deep(.el-table__cell) {
+      font-size: 13px;
+      color: #1d1d1f;
     }
 
     .action-btns {
@@ -752,21 +877,70 @@ $border-glass: rgba(255, 255, 255, 0.5);
   }
 }
 
-// 弹窗样式
-:deep(.el-dialog) {
-  border-radius: 28px;
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.8);
-  box-shadow: 0 32px 64px rgba(0,0,0,0.15);
-
-  .el-dialog__header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding: 24px 32px;
-    .el-dialog__title { font-weight: 700; color: #1d1d1f; }
-  }
-
-  .el-form-item__label { font-weight: 600; color: #48484a; }
+// 弹窗样式优化
+:deep(.el-overlay) {
+  overflow: hidden !important;
 }
 
+:deep(.el-dialog) {
+  display: flex !important;
+  flex-direction: column;
+  margin-top: 12vh !important;
+  max-height: 76vh;
+  
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  .el-dialog__header {
+    margin: 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    .el-dialog__title {
+      font-weight: 600;
+      font-size: 15px;
+      color: #1d1d1f;
+    }
+    .el-dialog__headerbtn {
+      top: 14px;
+      right: 16px;
+      font-size: 18px;
+      .el-dialog__close {
+        color: #909399;
+        font-weight: 700;
+        transition: all 0.2s;
+        &:hover { color: #f56c6c; transform: rotate(90deg); }
+      }
+    }
+  }
+
+  .el-dialog__body {
+    padding: 16px 24px;
+    overflow-y: auto;
+    flex: 1;
+    font-size: 13px;
+    &::-webkit-scrollbar { width: 5px; }
+    &::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 10px; }
+  }
+
+  .el-dialog__footer {
+    padding: 10px 16px 16px;
+    border-top: 1px solid #f0f0f0;
+    background: #ffffff;
+  }
+
+  .el-form-item__label { 
+    font-weight: 500; 
+    color: #606266; 
+    font-size: 13px; 
+  }
+}
+
+.code-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  line-height: 1.4;
+}
 </style>

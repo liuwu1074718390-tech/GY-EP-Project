@@ -133,26 +133,26 @@ export const categoryData = {
           name: '管材管件',
           value: 18600000,
           children: [
-            { name: '不锈钢管', value: 8500000 },
+            { name: '球墨管', value: 8500000 },
             { name: 'PE管', value: 5200000 },
-            { name: 'PVC管', value: 3100000 },
-            { name: '阀门', value: 1800000 }
+            { name: 'HDPE管', value: 3100000 },
+            { name: '阀门组件', value: 1800000 }
           ]
         },
         {
-          name: '钢材',
+          name: '特种材料',
           value: 15200000,
           children: [
-            { name: '钢筋', value: 8600000 },
-            { name: '钢板', value: 4200000 },
-            { name: '型钢', value: 2400000 }
+            { name: '不锈钢卷板', value: 8600000 },
+            { name: '防腐涂料', value: 4200000 },
+            { name: '自流平材料', value: 2400000 }
           ]
         },
         {
-          name: '水泥混凝土',
+          name: '过滤建材',
           value: 8556000,
           children: [
-            { name: '水泥', value: 5200000 },
+            { name: '滤沙滤料', value: 5200000 },
             { name: '混凝土', value: 3356000 }
           ]
         }
@@ -372,8 +372,8 @@ export const contractData = {
   expiringContracts: [
     { contractNo: 'HT-2025-0892', name: '南站水厂MBR膜组器采购合同', supplier: '碧水源膜科技', amount: 33055670, expireDate: '2026-02-15', daysLeft: 24 },
     { contractNo: 'HT-2025-0756', name: '北部污水厂提升泵采购合同', supplier: '南方泵业', amount: 5200000, expireDate: '2026-02-08', daysLeft: 17 },
-    { contractNo: 'HT-2025-0823', name: '钢筋材料年度框架合同', supplier: '宝钢特钢', amount: 8600000, expireDate: '2026-02-28', daysLeft: 37 },
-    { contractNo: 'HT-2025-0901', name: '化学药剂供应合同', supplier: '广州化工', amount: 3500000, expireDate: '2026-02-20', daysLeft: 29 }
+    { contractNo: 'HT-2025-0823', name: '离心球墨管年度框架合同', supplier: '新兴铸管', amount: 8600000, expireDate: '2026-02-28', daysLeft: 37 },
+    { contractNo: 'HT-2025-0901', name: '水处理药剂供应合同', supplier: '广州化工', amount: 3500000, expireDate: '2026-02-20', daysLeft: 29 }
   ]
 }
 
@@ -448,7 +448,7 @@ export const realtimeData = {
   ],
   todoItems: [
     { id: 1, title: 'MBR膜组器到货验收', deadline: '2026-01-25', priority: 'high', project: '南站水厂' },
-    { id: 2, title: '钢筋框架合同续签', deadline: '2026-02-28', priority: 'high', project: '年度合同' },
+    { id: 2, title: '球墨管年度框架合同续签', deadline: '2026-02-28', priority: 'high', project: '年度合同' },
     { id: 3, title: '北部污水厂生化设备询价', deadline: '2026-01-30', priority: 'medium', project: '北部污水厂' },
     { id: 4, title: '供应商年度评审会议', deadline: '2026-02-15', priority: 'medium', project: '供应商管理' },
     { id: 5, title: '东区净水厂预算调整申请', deadline: '2026-01-28', priority: 'low', project: '东区净水厂' }
