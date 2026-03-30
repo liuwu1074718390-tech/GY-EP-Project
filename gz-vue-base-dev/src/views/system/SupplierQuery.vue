@@ -46,6 +46,7 @@
           ref="categoryTreeRef"
           :data="filteredCategoryTree"
           :props="{ children: 'children', label: 'categoryName' }"
+          :indent="12"
           node-key="id"
           highlight-current
           @node-click="handleCategorySelect"
@@ -54,7 +55,7 @@
         >
           <template #default="{ node, data }">
             <div class="custom-tree-node">
-              <span class="node-prefix" :class="'level-' + data.level">{{ data.categoryCode }}</span>
+              <span class="node-prefix">{{ formatDisplayCategoryCode(node, data) }}</span>
               <span class="node-label">{{ node.label }}</span>
             </div>
           </template>
@@ -572,6 +573,27 @@ const filterNode = (value, data) => {
   return data.categoryName.includes(value)
 }
 
+const formatDisplayCategoryCode = (node, data) => {
+  if (!node || !data) return ''
+
+  const codeParts = []
+  let current = node
+  while (current && current.level > 0 && current.data) {
+    const rawCode = String(current.data.categoryCode ?? '').trim()
+    if (rawCode) {
+      codeParts.unshift(rawCode.slice(-2).padStart(2, '0'))
+    }
+    current = current.parent
+  }
+
+  if (!codeParts.length) {
+    return String(data.categoryCode ?? '')
+  }
+
+  const mergedCode = codeParts.join('')
+  return mergedCode.startsWith('26') ? mergedCode : `26${mergedCode}`
+}
+
 // 查询列表
 const handleQuery = async () => {
   loading.value = true
@@ -802,8 +824,8 @@ const handleDialogClose = () => {
 </script>
 
 <style lang="scss" scoped>
-$sidebar-width: 260px;
-$sidebar-collapsed-width: 60px;
+$sidebar-width: 248px;
+$sidebar-collapsed-width: 64px;
 $primary-blue: #377cfd;
 $bg-glass: rgba(255, 255, 255, 0.75);
 $border-glass: rgba(255, 255, 255, 0.5);
@@ -838,15 +860,14 @@ $border-glass: rgba(255, 255, 255, 0.5);
   flex-direction: column;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 
   &.collapsed {
     width: $sidebar-collapsed-width;
-    
+
     .sidebar-header {
       padding: 16px 0;
       justify-content: center;
-      
+
       .header-content { display: none; }
     }
   }
@@ -859,8 +880,8 @@ $border-glass: rgba(255, 255, 255, 0.5);
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     min-width: 0;
-    width: 100%;
-    box-sizing: border-box;
+    width: calc(100% + 14px);
+    margin-left: -7px;
 
     .header-content {
       display: flex;
@@ -868,19 +889,16 @@ $border-glass: rgba(255, 255, 255, 0.5);
       gap: 3px;
       flex: 1;
       min-width: 0;
-      white-space: nowrap;
-      
+
       .title-icon { color: $primary-blue; font-size: 16px; flex-shrink: 0; }
-      h3 { 
-        margin: 0; 
-        font-size: 13px; 
-        font-weight: 700; 
-        color: #1d1d1f; 
-        overflow: hidden; 
+      h3 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: #1d1d1f;
+        overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        flex: 1;
-        letter-spacing: -0.2px;
       }
     }
 
@@ -892,37 +910,24 @@ $border-glass: rgba(255, 255, 255, 0.5);
       align-items: center;
     }
 
-    .expand-btn, .toggle-btn {
+    .edit-btn, .expand-btn, .toggle-btn {
       color: #86868b;
       background: rgba(0, 0, 0, 0.03);
       border: none;
       width: 24px !important;
       height: 24px !important;
       padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      
-      &:hover { color: $primary-blue; background: rgba($primary-blue, 0.1); }
-      
-      :deep(.el-icon) {
-        font-size: 13px;
-      }
     }
   }
 
   .tree-container-custom {
     flex: 1;
     overflow-y: auto;
-    padding: 12px 2px;
-    
-    &::-webkit-scrollbar { width: 0; }
+    padding: 8px 0;
+    width: calc(100% + 14px);
+    margin-left: -7px;
 
-    .search-box {
-      margin-bottom: 12px;
-      padding: 0 4px;
-    }
+    &::-webkit-scrollbar { width: 0; }
 
     :deep(.el-tree) {
       background: transparent;
@@ -930,44 +935,41 @@ $border-glass: rgba(255, 255, 255, 0.5);
         height: 34px;
         border-radius: 8px;
         margin-bottom: 4px;
-        transition: all 0.2s ease;
-        &:hover { background: rgba($primary-blue, 0.05); }
-      }
-
-      .el-tree-node.is-current > .el-tree-node__content {
-        background: rgba($primary-blue, 0.15) !important;
-        border-right: 4px solid $primary-blue;
-        .node-label { 
-          color: $primary-blue; 
-          font-weight: 700; 
-        }
-        .node-prefix { 
-          color: $primary-blue !important; 
-          font-weight: 700;
-          opacity: 1;
-        }
+        padding-right: 4px;
       }
     }
 
     .custom-tree-node {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       font-size: 13px;
-      
+      width: 100%;
+      min-width: 0;
+
       .node-prefix {
         font-family: 'Monaco', monospace;
         font-size: 11px;
         font-weight: 600;
         color: #8e8e93;
-        min-width: 24px;
-        transition: all 0.3s;
+        width: auto;
+        text-align: left;
+        flex-shrink: 0;
       }
 
       .node-label {
         color: #1d1d1f;
-        transition: all 0.3s;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
+    }
+
+    .search-box {
+      margin-bottom: 12px;
+      padding: 0;
     }
   }
 }

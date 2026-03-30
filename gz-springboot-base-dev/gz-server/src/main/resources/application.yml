@@ -126,3 +126,11 @@ security:
       - /druid/**
       - /demo/**
       - /material/**
+
+material:
+  knowledge:
+    dify:
+      base-url: ""
+      dataset-id: ""
+      api-key: ""
+      document-name: 标准材料数据

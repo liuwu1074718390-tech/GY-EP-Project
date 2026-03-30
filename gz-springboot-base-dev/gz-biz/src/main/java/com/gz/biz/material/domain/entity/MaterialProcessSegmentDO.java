@@ -1,20 +1,24 @@
 package com.gz.biz.material.domain.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 材料计量单位实体 material_unit
+ * 标准工艺段实体 material_process_segment
  *
  * @author gz
- * @date 2026-01-22
+ * @date 2026-03-30
  */
 @Data
-@TableName("material_unit")
-public class MaterialUnitDO implements Serializable {
+@TableName("material_process_segment")
+public class MaterialProcessSegmentDO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
@@ -24,28 +28,16 @@ public class MaterialUnitDO implements Serializable {
     private Long id;
 
     /**
-     * 单位编码（2位，如01）
+     * 工艺段业务ID（如P001）
      */
-    @TableField("unit_code")
-    private String unitCode;
+    @TableField("segment_biz_id")
+    private String segmentBizId;
 
     /**
-     * 单位业务ID（如U0001）
+     * 工艺段名称
      */
-    @TableField("unit_biz_id")
-    private String unitBizId;
-
-    /**
-     * 单位名称（如t、kg）
-     */
-    @TableField("unit_name")
-    private String unitName;
-
-    /**
-     * 单位符号
-     */
-    @TableField("unit_symbol")
-    private String unitSymbol;
+    @TableField("segment_name")
+    private String segmentName;
 
     /**
      * 状态（1正常 0停用）

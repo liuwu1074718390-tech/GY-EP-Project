@@ -1,94 +1,198 @@
-import {
-    categoryData,
-    specData,
-    unitData,
-    materialStandardData
-} from '@/views/dashboard/mockStandardData'
+import request from '@/services/request'
 
 /**
- * 材料标准管理API (模拟本地数据处理)
+ * 材料标准管理API
  */
+const unwrap = (res) => (res && Object.prototype.hasOwnProperty.call(res, 'data') ? res.data : res)
 
 // 获取材料分类树
 export function getCategoryTree() {
-    return Promise.resolve({ data: categoryData })
+    return request({
+        url: '/material/standard/categoryTree',
+        method: 'post'
+    }).then(unwrap)
 }
 
 // 获取规格型号列表
 export function getSpecList() {
-    return Promise.resolve({ data: specData })
+    return request({
+        url: '/material/standard/specList',
+        method: 'post'
+    }).then(unwrap)
 }
 
 // 获取计量单位列表
 export function getUnitList() {
-    return Promise.resolve({ data: unitData })
+    return request({
+        url: '/material/standard/unitList',
+        method: 'post'
+    }).then(unwrap)
 }
-
-// 本地存储的模拟数据（由于在页面演示，使用 materialStandardData 作为初始值）
-let localMaterialData = [...materialStandardData]
 
 // 分页查询材料标准列表
 export function pageMaterialStandard(query) {
-    let result = [...localMaterialData]
-
-    // 简单过滤逻辑
-    if (query.materialName) {
-        result = result.filter(item => item.materialName.includes(query.materialName))
-    }
-    if (query.materialCode) {
-        result = result.filter(item => item.materialCode.includes(query.materialCode))
-    }
-    if (query.categoryLevel1Id) {
-        result = result.filter(item => item.categoryLevel1Id === query.categoryLevel1Id)
-    }
-    if (query.categoryLevel2Id) {
-        result = result.filter(item => item.categoryLevel2Id === query.categoryLevel2Id)
-    }
-    if (query.categoryLevel3Id) {
-        result = result.filter(item => item.categoryLevel3Id === query.categoryLevel3Id)
-    }
-    if (query.specId) {
-        result = result.filter(item => item.specId === query.specId)
-    }
-    if (query.unitId) {
-        result = result.filter(item => item.unitId === query.unitId)
-    }
-
-    const pageNum = query.pageNum || 1
-    const pageSize = query.pageSize || 20
-    const start = (pageNum - 1) * pageSize
-    const end = start + pageSize
-
-    return Promise.resolve({
-        records: result.slice(start, end),
-        total: result.length
-    })
+    return request({
+        url: '/material/standard/page',
+        method: 'post',
+        data: query
+    }).then(unwrap)
 }
 
 // 根据ID查询详情
 export function getMaterialStandardById(id) {
-    const item = localMaterialData.find(i => i.id === id)
-    return Promise.resolve({ data: item })
+    return request({
+        url: '/material/standard/getById',
+        method: 'post',
+        data: { id }
+    }).then(unwrap)
 }
 
 // 新增
 export function saveMaterialStandard(data) {
-    const newItem = { ...data, id: Date.now() }
-    localMaterialData.unshift(newItem)
-    return Promise.resolve({ code: 200 })
+    return request({
+        url: '/material/standard/save',
+        method: 'post',
+        data
+    })
 }
 
 // 更新
 export function updateMaterialStandard(data) {
-    const index = localMaterialData.findIndex(i => i.id === data.id)
-    if (index > -1) {
-        localMaterialData[index] = { ...localMaterialData[index], ...data }
-    }
-    return Promise.resolve({ code: 200 })
+    return request({
+        url: '/material/standard/update',
+        method: 'post',
+        data
+    })
 }
 
 // 删除
 export function deleteMaterialStandard(id) {
-    localMaterialData = localMaterialData.filter(i => i.id !== id)
-    return Promise.resolve({ code: 200 })
+    return request({
+        url: '/material/standard/delete',
+        method: 'post',
+        data: { id }
+    })
+}
+
+/**
+ * 标准规格型号维护API
+ */
+export function pageSpecModel(query) {
+    return request({
+        url: '/material/standard/specModel/page',
+        method: 'post',
+        data: query
+    }).then(unwrap)
+}
+
+export function getSpecModelById(id) {
+    return request({
+        url: '/material/standard/specModel/getById',
+        method: 'post',
+        data: { id }
+    }).then(unwrap)
+}
+
+export function saveSpecModel(data) {
+    return request({
+        url: '/material/standard/specModel/save',
+        method: 'post',
+        data
+    })
+}
+
+export function updateSpecModel(data) {
+    return request({
+        url: '/material/standard/specModel/update',
+        method: 'post',
+        data
+    })
+}
+
+export function deleteSpecModel(id) {
+    return request({
+        url: '/material/standard/specModel/delete',
+        method: 'post',
+        data: { id }
+    })
+}
+
+/**
+ * 标准单位库维护API
+ */
+export function pageUnitLibrary(query) {
+    return request({
+        url: '/material/standard/unit/page',
+        method: 'post',
+        data: query
+    }).then(unwrap)
+}
+
+export function saveUnitLibrary(data) {
+    return request({
+        url: '/material/standard/unit/save',
+        method: 'post',
+        data
+    })
+}
+
+export function updateUnitLibrary(data) {
+    return request({
+        url: '/material/standard/unit/update',
+        method: 'post',
+        data
+    })
+}
+
+export function deleteUnitLibrary(id) {
+    return request({
+        url: '/material/standard/unit/delete',
+        method: 'post',
+        data: { id }
+    })
+}
+
+/**
+ * 标准工艺段维护API
+ */
+export function pageProcessSegment(query) {
+    return request({
+        url: '/material/standard/processSegment/page',
+        method: 'post',
+        data: query
+    }).then(unwrap)
+}
+
+export function saveProcessSegment(data) {
+    return request({
+        url: '/material/standard/processSegment/save',
+        method: 'post',
+        data
+    })
+}
+
+export function updateProcessSegment(data) {
+    return request({
+        url: '/material/standard/processSegment/update',
+        method: 'post',
+        data
+    })
+}
+
+export function deleteProcessSegment(id) {
+    return request({
+        url: '/material/standard/processSegment/delete',
+        method: 'post',
+        data: { id }
+    })
+}
+
+/**
+ * 同步标准材料知识库（覆盖）
+ */
+export function syncMaterialKnowledge() {
+    return request({
+        url: '/material/standard/knowledge/sync',
+        method: 'post'
+    }).then(unwrap)
 }

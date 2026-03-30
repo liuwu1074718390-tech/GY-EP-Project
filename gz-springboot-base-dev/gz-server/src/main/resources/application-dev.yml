@@ -48,3 +48,11 @@ spring:
         max-active: 8
         # #连接池最大阻塞等待时间（使用负值表示没有限制）
         max-wait: -1ms
+
+material:
+  knowledge:
+    dify:
+      base-url: http://192.168.1.42/v1
+      dataset-id: dec7d6fa-d456-4caf-9839-e45d78cdcf11
+      api-key: dataset-SnUHLSdZbq0x7bU5samwUcwB
+      document-name: 标准材料数据
