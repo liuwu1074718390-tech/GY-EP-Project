@@ -3,12 +3,17 @@ package com.gz.biz.material.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.yulichang.base.MPJBaseService;
 import com.gz.biz.material.domain.entity.MaterialCategoryDO;
+import com.gz.biz.material.domain.entity.MaterialProcessSegmentDO;
 import com.gz.biz.material.domain.entity.MaterialSpecificationDO;
 import com.gz.biz.material.domain.entity.MaterialStandardDO;
 import com.gz.biz.material.domain.entity.MaterialUnitDO;
+import com.gz.biz.material.domain.req.MaterialProcessSegmentPageReq;
+import com.gz.biz.material.domain.req.MaterialProcessSegmentSaveReq;
 import com.gz.biz.material.domain.req.MaterialStandardIdReq;
 import com.gz.biz.material.domain.req.MaterialStandardPageReq;
 import com.gz.biz.material.domain.req.MaterialStandardSaveReq;
+import com.gz.biz.material.domain.req.MaterialUnitPageReq;
+import com.gz.biz.material.domain.req.MaterialUnitSaveReq;
 import com.gz.biz.material.domain.vo.MaterialCategoryTreeVO;
 import com.gz.biz.material.domain.vo.MaterialStandardVO;
 
@@ -42,6 +47,70 @@ public interface IMaterialStandardService extends MPJBaseService<MaterialStandar
      * @return 单位列表
      */
     List<MaterialUnitDO> getUnitList();
+
+    /**
+     * 分页查询单位库
+     *
+     * @param req 查询条件
+     * @return 分页结果
+     */
+    Page<MaterialUnitDO> pageUnit(MaterialUnitPageReq req);
+
+    /**
+     * 新增单位
+     *
+     * @param req 保存请求
+     * @return 是否成功
+     */
+    boolean saveUnit(MaterialUnitSaveReq req);
+
+    /**
+     * 更新单位
+     *
+     * @param req 更新请求
+     * @return 是否成功
+     */
+    boolean updateUnit(MaterialUnitSaveReq req);
+
+    /**
+     * 删除单位
+     *
+     * @param req ID请求
+     * @return 是否成功
+     */
+    boolean deleteUnit(MaterialStandardIdReq req);
+
+    /**
+     * 分页查询工艺段
+     *
+     * @param req 查询条件
+     * @return 分页结果
+     */
+    Page<MaterialProcessSegmentDO> pageProcessSegment(MaterialProcessSegmentPageReq req);
+
+    /**
+     * 新增工艺段
+     *
+     * @param req 保存请求
+     * @return 是否成功
+     */
+    boolean saveProcessSegment(MaterialProcessSegmentSaveReq req);
+
+    /**
+     * 更新工艺段
+     *
+     * @param req 更新请求
+     * @return 是否成功
+     */
+    boolean updateProcessSegment(MaterialProcessSegmentSaveReq req);
+
+    /**
+     * 删除工艺段
+     *
+     * @param req ID请求
+     * @return 是否成功
+     */
+    boolean deleteProcessSegment(MaterialStandardIdReq req);
 
     /**
      * 分页查询材料标准

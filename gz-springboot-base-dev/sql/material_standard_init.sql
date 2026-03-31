@@ -45,11 +45,13 @@ DROP TABLE IF EXISTS material_unit;
 CREATE TABLE material_unit (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
   unit_code VARCHAR(2) NOT NULL UNIQUE COMMENT '单位编码（2位，如01）',
+  unit_biz_id VARCHAR(16) DEFAULT NULL COMMENT '单位业务ID（如U0001）',
   unit_name VARCHAR(20) NOT NULL COMMENT '单位名称（如t、kg）',
   unit_symbol VARCHAR(10) COMMENT '单位符号',
   status CHAR(1) DEFAULT '1' COMMENT '状态（1正常 0停用）',
   create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  UNIQUE KEY uk_unit_biz_id (unit_biz_id),
   KEY idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='材料单位表';
 
@@ -137,6 +139,10 @@ INSERT INTO material_unit (unit_code, unit_name, unit_symbol) VALUES
 ('08', '套', '套'),
 ('09', '台', '台'),
 ('10', '件', '件');
+
+UPDATE material_unit
+SET unit_biz_id = CONCAT('U', LPAD(id, 4, '0'))
+WHERE unit_biz_id IS NULL OR unit_biz_id = '';
 
 -- ----------------------------
 -- 插入示例材料标准数据

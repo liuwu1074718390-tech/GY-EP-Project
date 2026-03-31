@@ -35,12 +35,6 @@ export default defineConfig(({ mode, command }) => {
 			host: true,
 			open: false,
 			proxy: {
-				// Java后端代理（材料标准管理等模块）- 必须在通用代理之前
-				'/dev-api/material': {
-					target: 'http://127.0.0.1:9081',
-					changeOrigin: true,
-					rewrite: path => path.replace(/^\/dev-api/, '')
-				},
 				// Python后端代理（默认）
 				[VITE_APP_BASE_API]: {
 					target: 'http://127.0.0.1:9099',
