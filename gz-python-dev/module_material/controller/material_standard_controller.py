@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+import csv
+import json
+import os
+from pathlib import Path
+from urllib import parse, request as urlrequest
+
 from typing import Any, Annotated
 
 from fastapi import APIRouter, Body, Depends, Request
@@ -8,6 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.get_db import get_db
 from module_admin.service.login_service import LoginService
+from module_material.service.material_standardization_service import (
+    apply_review_result,
+    clear_review_result,
+    ensure_standardization_tables,
+)
+from utils.log_util import logger
 from utils.response_util import ResponseUtil
 
 material_standard_controller = APIRouter(
@@ -16,6 +28,13 @@ material_standard_controller = APIRouter(
 material_knowledge_controller = APIRouter(
     prefix='/material/standard/knowledge', dependencies=[Depends(LoginService.get_current_user)]
 )
+
+MATERIAL_SPLITTER = "\n\n<<<MATERIAL_SEGMENT_SPLITTER>>>\n\n"
+PROCESS_SPLITTER = "\n\n<<<PROCESS_SEGMENT_SPLITTER>>>\n\n"
+CATEGORY_SPLITTER = "\n\n<<<CATEGORY_SEGMENT_SPLITTER>>>\n\n"
+MATERIAL_DOCUMENT_TYPE = 'material'
+PROCESS_DOCUMENT_TYPE = 'process'
+CATEGORY_DOCUMENT_TYPE = 'category'
 
 
 def _to_int(value: Any, default: int) -> int:
@@ -41,6 +60,65 @@ async def _fetch_one(db: AsyncSession, sql: str, params: dict | None = None) -> 
 async def _fetch_scalar(db: AsyncSession, sql: str, params: dict | None = None) -> Any:
     res = await db.execute(text(sql), params or {})
     return res.scalar()
+
+
+def _safe_text(value: Any) -> str:
+    return str(value or '').strip()
+
+
+def _normalize_level3_merged_code(value: Any) -> str:
+    digits = ''.join(ch for ch in str(value or '').strip() if ch.isdigit())
+    if not digits:
+        return ''
+    if len(digits) == 6:
+        return f'26{digits}'
+    if len(digits) >= 8:
+        return digits[:8]
+    return ''
+
+
+def _project_root_dir() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
+def _candidate_std_name_category_map_files() -> list[Path]:
+    env_path = _safe_text(os.getenv('MATERIAL_KNOWLEDGE_STD_NAME_CATEGORY_MAP_FILE'))
+    candidates: list[Path] = []
+    if env_path:
+        candidates.append(Path(env_path))
+    root = _project_root_dir()
+    candidates.extend(
+        [
+            root / 'gz-springboot-base-dev' / 'sql' / 'spec_model_category_relink_report.csv',
+            root / 'gz-python-dev' / 'sql' / 'spec_model_category_relink_report.csv',
+            root / 'runtime' / 'spec_model_category_relink_report.csv',
+        ]
+    )
+    return candidates
+
+
+def _load_std_name_category_code_map() -> dict[str, str]:
+    for file_path in _candidate_std_name_category_map_files():
+        if not file_path.exists() or not file_path.is_file():
+            continue
+        try:
+            mapping: dict[str, str] = {}
+            with file_path.open('r', encoding='utf-8-sig', newline='') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    row_type = _safe_text(row.get('type'))
+                    if row_type and row_type != 'mapped':
+                        continue
+                    std_name = _safe_text(row.get('name'))
+                    merged_code = _normalize_level3_merged_code(row.get('detail'))
+                    if not std_name or not merged_code:
+                        continue
+                    mapping[std_name] = merged_code
+            if mapping:
+                return mapping
+        except Exception as e:
+            logger.warning(f'读取标准分类映射文件失败: {file_path}, {e}')
+    return {}
 
 
 async def _next_unit_code(db: AsyncSession) -> str:
@@ -474,7 +552,7 @@ async def material_page(
 ):
     page_num = _to_int(payload.get('pageNum'), 1)
     page_size = _to_int(payload.get('pageSize'), 20)
-    where = ["ms.del_flag = '0'"]
+    where = ["si.id IS NOT NULL"]
     params: dict[str, Any] = {}
 
     def like_if(v: Any, field: str, key: str) -> None:
@@ -488,46 +566,119 @@ async def material_page(
             where.append(f"{field} = :{key}")
             params[key] = v
 
-    like_if(payload.get('materialCode'), 'ms.material_code', 'material_code')
-    like_if(payload.get('materialName'), 'ms.material_name', 'material_name')
-    eq_if(payload.get('categoryLevel1Id'), 'ms.category_level1_id', 'c1')
-    eq_if(payload.get('categoryLevel2Id'), 'ms.category_level2_id', 'c2')
-    eq_if(payload.get('categoryLevel3Id'), 'ms.category_level3_id', 'c3')
-    eq_if(payload.get('specId'), 'ms.spec_id', 'spec_id')
-    eq_if(payload.get('unitId'), 'ms.unit_id', 'unit_id')
-    eq_if(payload.get('status'), 'ms.status', 'status')
+    like_if(payload.get('materialCode'), 'si.standard_code', 'material_code')
+    like_if(payload.get('materialName'), 'si.material_name', 'material_name')
+    like_if(payload.get('specification'), 'si.specification', 'specification')
+    eq_if(payload.get('unitId'), 'si.standard_unit_id', 'unit_id')
+
+    category_level3_id = _to_int(payload.get('categoryLevel3Id'), 0)
+    category_level2_id = _to_int(payload.get('categoryLevel2Id'), 0)
+    category_level1_id = _to_int(payload.get('categoryLevel1Id'), 0)
+    if category_level3_id > 0:
+        where.append("si.standard_category_level3_id = :category_level3_id")
+        params['category_level3_id'] = category_level3_id
+    elif category_level2_id > 0:
+        where.append(
+            """
+            EXISTS (
+              SELECT 1
+              FROM material_category c3f
+              WHERE c3f.id = si.standard_category_level3_id
+                AND c3f.parent_id = :category_level2_id
+            )
+            """
+        )
+        params['category_level2_id'] = category_level2_id
+    elif category_level1_id > 0:
+        where.append(
+            """
+            EXISTS (
+              SELECT 1
+              FROM material_category c3f
+              LEFT JOIN material_category c2f ON c2f.id = c3f.parent_id
+              WHERE c3f.id = si.standard_category_level3_id
+                AND c2f.parent_id = :category_level1_id
+            )
+            """
+        )
+        params['category_level1_id'] = category_level1_id
+
     where_sql = " AND ".join(where)
 
-    total = await _fetch_scalar(db, f"SELECT COUNT(1) FROM material_standard ms WHERE {where_sql}", params) or 0
+    total = await _fetch_scalar(
+        db,
+        f"""
+        SELECT COUNT(1)
+        FROM material_standard_item si
+        LEFT JOIN material_category c3 ON c3.id = si.standard_category_level3_id
+        LEFT JOIN material_category c2 ON c2.id = c3.parent_id
+        LEFT JOIN material_category c1 ON c1.id = c2.parent_id
+        LEFT JOIN material_std_name sn ON sn.id = si.standard_std_name_id
+        LEFT JOIN material_unit su ON su.id = si.standard_unit_id
+        WHERE {where_sql}
+        """,
+        params,
+    ) or 0
     params.update({'offset': (page_num - 1) * page_size, 'limit': page_size})
     rows = await _fetch_all(
         db,
         f"""
-        SELECT ms.id,
-               ms.material_code AS materialCode,
-               ms.material_name AS materialName,
-               ms.category_level1_id AS categoryLevel1Id,
-               ms.category_level2_id AS categoryLevel2Id,
-               ms.category_level3_id AS categoryLevel3Id,
-               ms.spec_id AS specId,
-               ms.unit_id AS unitId,
-               ms.remark,
-               ms.status,
+        SELECT si.id,
+               si.standard_code AS materialCode,
+               si.material_name AS materialName,
+               si.standard_category_level3_id AS categoryLevel3Id,
+               c2.id AS categoryLevel2Id,
+               c1.id AS categoryLevel1Id,
+               si.standard_unit_id AS unitId,
+               NULL AS remark,
+               '1' AS status,
+               si.specification,
+               si.standard_attr_value_ids_json AS standardAttrValueIdsJson,
                c1.category_name AS categoryLevel1Name,
                c2.category_name AS categoryLevel2Name,
                c3.category_name AS categoryLevel3Name,
-               u.unit_name AS unitName
-        FROM material_standard ms
-        LEFT JOIN material_category c1 ON c1.id = ms.category_level1_id
-        LEFT JOIN material_category c2 ON c2.id = ms.category_level2_id
-        LEFT JOIN material_category c3 ON c3.id = ms.category_level3_id
-        LEFT JOIN material_unit u ON u.id = ms.unit_id
+               su.unit_name AS unitName,
+               (
+                   SELECT COUNT(1)
+                   FROM material_standard_review rr
+                   WHERE rr.del_flag = '0'
+                     AND rr.standard_item_id = si.id
+               ) AS linkedReviewCount
+        FROM material_standard_item si
+        LEFT JOIN material_category c3 ON c3.id = si.standard_category_level3_id
+        LEFT JOIN material_category c2 ON c2.id = c3.parent_id
+        LEFT JOIN material_category c1 ON c1.id = c2.parent_id
+        LEFT JOIN material_unit su ON su.id = si.standard_unit_id
         WHERE {where_sql}
-        ORDER BY ms.id DESC
+        ORDER BY si.update_time DESC, si.id DESC
         LIMIT :offset, :limit
         """,
         params,
     )
+
+    for row in rows:
+        attr_ids = json.loads(row.get('standardAttrValueIdsJson') or '[]')
+        if attr_ids:
+            placeholders = ','.join([f':attr_{idx}' for idx in range(len(attr_ids))])
+            attr_rows = await _fetch_all(
+                db,
+                f"""
+                SELECT s.spec_key AS specKey, v.spec_value AS specValue
+                FROM material_std_name_spec_value v
+                LEFT JOIN material_std_name_spec s ON s.id = v.spec_id
+                WHERE v.id IN ({placeholders}) AND v.del_flag = '0'
+                ORDER BY v.id ASC
+                """,
+                {f'attr_{idx}': attr_id for idx, attr_id in enumerate(attr_ids)},
+            )
+            row['specification'] = '；'.join(
+                [f"{item.get('specKey') or '规格'}:{item.get('specValue') or '-'}" for item in attr_rows]
+            ) or row.get('specification') or ''
+        row['categoryPath'] = '/'.join(
+            [v for v in [row.get('categoryLevel1Name'), row.get('categoryLevel2Name'), row.get('categoryLevel3Name')] if v]
+        )
+        row.pop('standardAttrValueIdsJson', None)
+
     return ResponseUtil.success(data={'records': rows, 'total': int(total)})
 
 
@@ -664,8 +815,10 @@ async def spec_model_page(
     page_num = _to_int(payload.get('pageNum'), 1)
     page_size = _to_int(payload.get('pageSize'), 20)
     standard_name = (payload.get('standardName') or '').strip()
+    spec_keyword = (payload.get('specKeyword') or '').strip()
     c1 = payload.get('categoryLevel1Id')
     c2 = payload.get('categoryLevel2Id')
+    c3 = payload.get('categoryLevel3Id')
     status = (payload.get('status') or '').strip()
 
     where = ["sn.del_flag = '0'"]
@@ -673,12 +826,29 @@ async def spec_model_page(
     if standard_name:
         where.append("sn.standard_name LIKE :standard_name")
         params['standard_name'] = f'%{standard_name}%'
+    if spec_keyword:
+        where.append(
+            """
+            EXISTS (
+                SELECT 1
+                FROM material_std_name_spec s
+                JOIN material_std_name_spec_value v ON v.spec_id = s.id AND v.del_flag = '0'
+                WHERE s.std_name_id = sn.id
+                  AND s.del_flag = '0'
+                  AND (s.spec_key LIKE :spec_keyword OR v.spec_value LIKE :spec_keyword)
+            )
+            """
+        )
+        params['spec_keyword'] = f'%{spec_keyword}%'
     if c1 not in (None, '', 'null'):
         where.append("c1.id = :c1")
         params['c1'] = c1
     if c2 not in (None, '', 'null'):
-        where.append("sn.category_level2_id = :c2")
+        where.append("c2.id = :c2")
         params['c2'] = c2
+    if c3 not in (None, '', 'null'):
+        where.append("c3.id = :c3")
+        params['c3'] = c3
     if status:
         where.append("sn.status = :status")
         params['status'] = status
@@ -689,8 +859,19 @@ async def spec_model_page(
         f"""
         SELECT COUNT(1)
         FROM material_std_name sn
-        LEFT JOIN material_category c2 ON c2.id = sn.category_level2_id
-        LEFT JOIN material_category c1 ON c1.id = c2.parent_id
+        LEFT JOIN material_category clink ON clink.id = sn.category_level2_id
+        LEFT JOIN material_category c3 ON c3.id = CASE WHEN clink.level = 3 THEN clink.id ELSE NULL END
+        LEFT JOIN material_category c2 ON c2.id = CASE
+            WHEN clink.level = 3 THEN clink.parent_id
+            WHEN clink.level = 2 THEN clink.id
+            ELSE NULL
+        END
+        LEFT JOIN material_category c1 ON c1.id = CASE
+            WHEN clink.level = 1 THEN clink.id
+            WHEN clink.level = 2 THEN clink.parent_id
+            WHEN clink.level = 3 THEN c2.parent_id
+            ELSE NULL
+        END
         WHERE {where_sql}
         """,
         params,
@@ -703,14 +884,27 @@ async def spec_model_page(
         SELECT sn.id,
                sn.std_name_code AS stdNameCode,
                sn.standard_name AS standardName,
-               sn.category_level2_id AS categoryLevel2Id,
+               sn.category_level2_id AS linkedCategoryId,
                c2.category_name AS categoryLevel2Name,
+               c3.id AS categoryLevel3Id,
+               c3.category_name AS categoryLevel3Name,
                c1.id AS categoryLevel1Id,
                c1.category_name AS categoryLevel1Name,
                sn.status
         FROM material_std_name sn
-        LEFT JOIN material_category c2 ON c2.id = sn.category_level2_id
-        LEFT JOIN material_category c1 ON c1.id = c2.parent_id
+        LEFT JOIN material_category clink ON clink.id = sn.category_level2_id
+        LEFT JOIN material_category c3 ON c3.id = CASE WHEN clink.level = 3 THEN clink.id ELSE NULL END
+        LEFT JOIN material_category c2 ON c2.id = CASE
+            WHEN clink.level = 3 THEN clink.parent_id
+            WHEN clink.level = 2 THEN clink.id
+            ELSE NULL
+        END
+        LEFT JOIN material_category c1 ON c1.id = CASE
+            WHEN clink.level = 1 THEN clink.id
+            WHEN clink.level = 2 THEN clink.parent_id
+            WHEN clink.level = 3 THEN c2.parent_id
+            ELSE NULL
+        END
         WHERE {where_sql}
         ORDER BY sn.id DESC
         LIMIT :offset, :limit
@@ -741,7 +935,21 @@ async def spec_model_page(
             """,
             {'sid': row['id']},
         )
-        row['specSummary'] = '；'.join([f"{s['specKey']}:{s['specValue']}" for s in specs])
+        grouped_spec_values: dict[str, list[str]] = {}
+        spec_key_order: list[str] = []
+        for item in specs:
+            spec_key = _safe_text(item.get('specKey')) or '规格'
+            spec_value = _safe_text(item.get('specValue'))
+            if not spec_value:
+                continue
+            if spec_key not in grouped_spec_values:
+                grouped_spec_values[spec_key] = []
+                spec_key_order.append(spec_key)
+            if spec_value not in grouped_spec_values[spec_key]:
+                grouped_spec_values[spec_key].append(spec_value)
+        row['specSummary'] = '；'.join(
+            [f"{spec_key}:{','.join(grouped_spec_values[spec_key])}" for spec_key in spec_key_order]
+        )
     return ResponseUtil.success(data={'records': rows, 'total': int(total)})
 
 
@@ -758,7 +966,7 @@ async def spec_model_get_by_id(
         SELECT id,
                standard_name AS standardName,
                std_name_code AS stdNameCode,
-               category_level2_id AS categoryLevel2Id,
+               category_level2_id AS linkedCategoryId,
                status
         FROM material_std_name
         WHERE id = :id AND del_flag = '0'
@@ -804,14 +1012,30 @@ async def spec_model_get_by_id(
 async def _save_spec_model(db: AsyncSession, payload: dict, is_update: bool) -> None:
     sid = payload.get('id')
     standard_name = (payload.get('standardName') or '').strip()
-    category_level2_id = payload.get('categoryLevel2Id')
+    linked_category_id = payload.get('linkedCategoryId')
     status = (payload.get('status') or '1').strip() or '1'
     unit_items = payload.get('unitItems') or []
     spec_items = payload.get('specItems') or []
     if not standard_name:
         raise ValueError('标准材料名称不能为空')
-    if not category_level2_id:
+    if not linked_category_id:
         raise ValueError('所属分类不能为空')
+    linked_category = await _fetch_one(
+        db,
+        """
+        SELECT id, level, status
+        FROM material_category
+        WHERE id = :id
+        LIMIT 1
+        """,
+        {'id': linked_category_id},
+    )
+    if not linked_category:
+        raise ValueError('所属分类不存在')
+    if str(linked_category.get('status') or '0') != '1':
+        raise ValueError('所属分类已停用')
+    if _to_int(linked_category.get('level')) not in (1, 2, 3):
+        raise ValueError('所属分类层级非法')
     dup_sql = "SELECT COUNT(1) FROM material_std_name WHERE standard_name = :name AND del_flag = '0'"
     dup_params = {'name': standard_name}
     if is_update:
@@ -832,7 +1056,7 @@ async def _save_spec_model(db: AsyncSession, payload: dict, is_update: bool) -> 
                 WHERE id = :id
                 """
             ),
-            {'standard_name': standard_name, 'c2': category_level2_id, 'status': status, 'id': sid},
+            {'standard_name': standard_name, 'c2': linked_category_id, 'status': status, 'id': sid},
         )
         await db.execute(text("UPDATE material_std_name_unit SET del_flag = '1' WHERE std_name_id = :id"), {'id': sid})
         await db.execute(text("UPDATE material_std_name_spec SET del_flag = '1' WHERE std_name_id = :id"), {'id': sid})
@@ -845,7 +1069,7 @@ async def _save_spec_model(db: AsyncSession, payload: dict, is_update: bool) -> 
                 VALUES(:standard_name, :code, :c2, :status, '0')
                 """
             ),
-            {'standard_name': standard_name, 'code': code, 'c2': category_level2_id, 'status': status},
+            {'standard_name': standard_name, 'code': code, 'c2': linked_category_id, 'status': status},
         )
         sid = await _fetch_scalar(db, "SELECT LAST_INSERT_ID()")
 
@@ -956,7 +1180,731 @@ async def spec_model_delete(
     return ResponseUtil.success()
 
 
+@material_standard_controller.post('/review/page')
+async def standard_review_page(
+    request: Request,
+    payload: Annotated[dict, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    try:
+        await ensure_standardization_tables(db)
+        page_num = _to_int(payload.get('pageNum'), 1)
+        page_size = _to_int(payload.get('pageSize'), 20)
+        where = ["r.del_flag = '0'"]
+        params: dict[str, Any] = {}
+
+        def like_if(value: Any, field: str, key: str) -> None:
+            text_value = _safe_text(value)
+            if text_value:
+                where.append(f"{field} LIKE :{key}")
+                params[key] = f'%{text_value}%'
+
+        material_name = _safe_text(payload.get('materialName'))
+        if material_name:
+            where.append(
+                """
+                (
+                    r.material_name LIKE :material_name
+                    OR sn.standard_name LIKE :material_name
+                )
+                """
+            )
+            params['material_name'] = f'%{material_name}%'
+
+        specification = _safe_text(payload.get('specification'))
+        if specification:
+            where.append(
+                """
+                (
+                    r.specification LIKE :specification
+                    OR EXISTS (
+                        SELECT 1
+                        FROM material_std_name_spec_value v
+                        LEFT JOIN material_std_name_spec s ON s.id = v.spec_id
+                        WHERE v.del_flag = '0'
+                          AND JSON_CONTAINS(
+                              IF(
+                                  JSON_VALID(r.standard_attr_value_ids_json),
+                                  r.standard_attr_value_ids_json,
+                                  JSON_ARRAY()
+                              ),
+                              CAST(v.id AS JSON),
+                              '$'
+                          )
+                          AND (
+                              v.spec_value LIKE :specification
+                              OR v.spec_value_code LIKE :specification
+                              OR s.spec_key LIKE :specification
+                          )
+                    )
+                )
+                """
+            )
+            params['specification'] = f'%{specification}%'
+
+        status_value = _safe_text(payload.get('status'))
+        if status_value:
+            if status_value == 'SUCCESS':
+                where.append("r.standardization_status IN ('SUCCESS', 'SKIPPED')")
+            else:
+                where.append("r.standardization_status = :status")
+                params['status'] = status_value
+        like_if(payload.get('standardCode'), 'r.standard_code', 'standard_code')
+        process_segment = _safe_text(payload.get('processSegment'))
+        if process_segment:
+            where.append(
+                """
+                (
+                    r.original_process_segment LIKE :process_segment
+                    OR r.process_segment_name LIKE :process_segment
+                    OR ps.segment_name LIKE :process_segment
+                )
+                """
+            )
+            params['process_segment'] = f'%{process_segment}%'
+
+        category_level3_id = _to_int(payload.get('categoryLevel3Id'), 0)
+        category_level2_id = _to_int(payload.get('categoryLevel2Id'), 0)
+        category_level1_id = _to_int(payload.get('categoryLevel1Id'), 0)
+        if category_level3_id > 0:
+            where.append("r.standard_category_level3_id = :category_level3_id")
+            params['category_level3_id'] = category_level3_id
+        elif category_level2_id > 0:
+            where.append(
+                """
+                EXISTS (
+                  SELECT 1
+                  FROM material_category c3f
+                  WHERE c3f.id = r.standard_category_level3_id
+                    AND c3f.parent_id = :category_level2_id
+                )
+                """
+            )
+            params['category_level2_id'] = category_level2_id
+        elif category_level1_id > 0:
+            where.append(
+                """
+                EXISTS (
+                  SELECT 1
+                  FROM material_category c3f
+                  LEFT JOIN material_category c2f ON c2f.id = c3f.parent_id
+                  WHERE c3f.id = r.standard_category_level3_id
+                    AND c2f.parent_id = :category_level1_id
+                )
+                """
+            )
+            params['category_level1_id'] = category_level1_id
+
+        where_sql = ' AND '.join(where)
+        dedupe_from_sql = """
+            FROM material_standard_review r
+            JOIN (
+                SELECT MAX(id) AS id
+                FROM material_standard_review
+                WHERE del_flag = '0'
+                GROUP BY material_name, specification, unit_name
+            ) latest ON latest.id = r.id
+            LEFT JOIN material_category c3 ON c3.id = r.standard_category_level3_id
+            LEFT JOIN material_std_name sn ON sn.id = r.standard_std_name_id
+            LEFT JOIN material_unit u ON u.id = r.standard_unit_id
+            LEFT JOIN material_process_segment ps ON ps.id = r.standard_segment_id
+        """
+        total = await _fetch_scalar(db, f"SELECT COUNT(1) {dedupe_from_sql} WHERE {where_sql}", params) or 0
+        params.update({'offset': (page_num - 1) * page_size, 'limit': page_size})
+        rows = await _fetch_all(
+            db,
+            f"""
+            SELECT
+                r.id,
+                r.price_record_id AS priceRecordId,
+                r.material_name AS materialName,
+                r.specification,
+                r.unit_name AS unitName,
+                r.remark,
+                r.update_time AS updateTime,
+                r.original_process_segment AS originalProcessSegment,
+                r.raw_price_excluding_tax AS rawPriceExcludingTax,
+                r.raw_price_including_tax AS rawPriceIncludingTax,
+                r.standardization_status AS standardizationStatus,
+                r.source_type AS sourceType,
+                r.standard_code AS standardCode,
+                r.conversion_factor AS conversionFactor,
+                r.normalized_price_excluding_tax AS normalizedPriceExcludingTax,
+                r.normalized_price_including_tax AS normalizedPriceIncludingTax,
+                r.error_message AS errorMessage,
+                r.standardized_at AS standardizedAt,
+                r.standard_category_level3_id AS standardCategoryLevel3Id,
+                c3.category_name AS standardCategoryLevel3Name,
+                r.standard_std_name_id AS standardStdNameId,
+                sn.standard_name AS standardStdName,
+                sn.std_name_code AS standardStdNameCode,
+                r.standard_unit_id AS standardUnitId,
+                u.unit_name AS standardUnitName,
+                u.unit_biz_id AS standardUnitBizId,
+                r.standard_segment_id AS standardSegmentId,
+                ps.segment_name AS standardSegmentName,
+                ps.segment_biz_id AS standardSegmentBizId,
+                r.standard_attr_value_ids_json AS standardAttrValueIdsJson
+            {dedupe_from_sql}
+            WHERE {where_sql}
+            ORDER BY COALESCE(r.update_time, r.create_time) DESC, r.id DESC
+            LIMIT :offset, :limit
+            """,
+            params,
+        )
+        for row in rows:
+            attr_ids = json.loads(row.get('standardAttrValueIdsJson') or '[]')
+            row['standardAttrValueIds'] = attr_ids
+            if attr_ids:
+                placeholders = ','.join([f':attr_{idx}' for idx in range(len(attr_ids))])
+                attr_rows = await _fetch_all(
+                    db,
+                    f"""
+                    SELECT v.id,
+                           v.spec_value AS specValue,
+                           v.spec_value_code AS specValueCode,
+                           s.spec_key AS specKey
+                    FROM material_std_name_spec_value v
+                    LEFT JOIN material_std_name_spec s ON s.id = v.spec_id
+                    WHERE v.id IN ({placeholders}) AND v.del_flag = '0'
+                    ORDER BY v.id ASC
+                    """,
+                    {f'attr_{idx}': attr_id for idx, attr_id in enumerate(attr_ids)},
+                )
+                row['standardAttrValues'] = attr_rows
+            else:
+                row['standardAttrValues'] = []
+        return ResponseUtil.success(data={'records': rows, 'total': int(total)})
+    except Exception:
+        logger.exception('标准化复核分页查询失败')
+        return ResponseUtil.failure(msg='标准化失败：标准库版本不一致，请刷新后重试。')
+
+
+@material_standard_controller.post('/review/getById')
+async def standard_review_get_by_id(
+    request: Request,
+    payload: Annotated[dict, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    await ensure_standardization_tables(db)
+    review_id = _to_int(payload.get('id'), 0)
+    if review_id <= 0:
+        return ResponseUtil.failure(msg='ID不能为空')
+    row = await _fetch_one(
+        db,
+        """
+        SELECT
+            r.id,
+            r.price_record_id AS priceRecordId,
+            r.material_name AS materialName,
+            r.specification,
+            r.unit_name AS unitName,
+            r.remark,
+            r.original_process_segment AS originalProcessSegment,
+            r.raw_price_excluding_tax AS rawPriceExcludingTax,
+            r.raw_price_including_tax AS rawPriceIncludingTax,
+            r.dify_request_json AS difyRequestJson,
+            r.dify_answer_text AS difyAnswerText,
+            r.dify_result_json AS difyResultJson,
+            r.standard_category_level3_id AS standardCategoryLevel3Id,
+            r.standard_std_name_id AS standardStdNameId,
+            r.standard_unit_id AS standardUnitId,
+            r.standard_segment_id AS standardSegmentId,
+            r.standard_attr_value_ids_json AS standardAttrValueIdsJson,
+            r.standard_code AS standardCode,
+            r.conversion_factor AS conversionFactor,
+            r.normalized_price_excluding_tax AS normalizedPriceExcludingTax,
+            r.normalized_price_including_tax AS normalizedPriceIncludingTax,
+            r.standardization_status AS standardizationStatus,
+            r.source_type AS sourceType,
+            r.error_message AS errorMessage
+        FROM material_standard_review r
+        WHERE r.id = :id AND r.del_flag = '0'
+        LIMIT 1
+        """,
+        {'id': review_id},
+    )
+    if not row:
+        return ResponseUtil.failure(msg='标准化复核记录不存在')
+    row['standardAttrValueIds'] = json.loads(row.get('standardAttrValueIdsJson') or '[]')
+    return ResponseUtil.success(data=row)
+
+
+@material_standard_controller.post('/review/update')
+async def standard_review_update(
+    request: Request,
+    payload: Annotated[dict, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    await ensure_standardization_tables(db)
+    review_id = _to_int(payload.get('id'), 0)
+    if review_id <= 0:
+        return ResponseUtil.failure(msg='ID不能为空')
+    try:
+        result = await apply_review_result(
+            db,
+            review_id,
+            category_level3_id=payload.get('standardCategoryLevel3Id'),
+            standard_std_name_id=payload.get('standardStdNameId'),
+            standard_unit_id=payload.get('standardUnitId'),
+            standard_segment_id=payload.get('standardSegmentId'),
+            standard_attr_value_ids=payload.get('standardAttrValueIds') or [],
+            conversion_factor=payload.get('conversionFactor'),
+        )
+        await db.commit()
+        return ResponseUtil.success(data=result)
+    except Exception as exc:
+        await db.rollback()
+        return ResponseUtil.failure(msg=str(exc))
+
+
+@material_standard_controller.post('/review/delete')
+async def standard_review_delete(
+    request: Request,
+    payload: Annotated[dict, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    await ensure_standardization_tables(db)
+    review_id = _to_int(payload.get('id'), 0)
+    if review_id <= 0:
+        return ResponseUtil.failure(msg='ID不能为空')
+    try:
+        await clear_review_result(db, review_id)
+        await db.commit()
+        return ResponseUtil.success(msg='删除成功')
+    except Exception as exc:
+        await db.rollback()
+        return ResponseUtil.failure(msg=str(exc))
+
+
+def _load_dify_config() -> dict:
+    base_url = (os.getenv('MATERIAL_KNOWLEDGE_DIFY_BASE_URL') or 'http://192.168.1.42/v1').strip()
+    dataset_id = (
+        os.getenv('MATERIAL_KNOWLEDGE_DIFY_DATASET_ID') or 'dec7d6fa-d456-4caf-9839-e45d78cdcf11'
+    ).strip()
+    api_key = (os.getenv('MATERIAL_KNOWLEDGE_DIFY_API_KEY') or 'dataset-SnUHLSdZbq0x7bU5samwUcwB').strip()
+    material_doc_name = (os.getenv('MATERIAL_KNOWLEDGE_DIFY_MATERIAL_DOCUMENT_NAME') or '标准材料数据').strip()
+    process_doc_name = (os.getenv('MATERIAL_KNOWLEDGE_DIFY_PROCESS_DOCUMENT_NAME') or '标准工艺段').strip()
+    category_doc_name = (os.getenv('MATERIAL_KNOWLEDGE_DIFY_CATEGORY_DOCUMENT_NAME') or '标准分类').strip()
+    if not base_url or not dataset_id or not api_key:
+        raise ValueError('Dify 配置缺失，请检查 base_url/dataset_id/api_key')
+    return {
+        'base_url': base_url.rstrip('/'),
+        'dataset_id': dataset_id,
+        'api_key': api_key,
+        'material_doc_name': material_doc_name,
+        'process_doc_name': process_doc_name,
+        'category_doc_name': category_doc_name,
+    }
+
+
+def _build_process_rule(splitter: str) -> dict:
+    return {
+        'mode': 'custom',
+        'rules': {
+            'segmentation': {'separator': splitter.strip(), 'max_tokens': 4000},
+            'pre_processing_rules': [
+                {'id': 'remove_extra_spaces', 'enabled': True},
+                {'id': 'remove_urls_emails', 'enabled': False},
+            ],
+        },
+    }
+
+
+def _dify_request(cfg: dict, method: str, path: str, body: dict | None = None, query: dict | None = None) -> dict:
+    query_string = ''
+    if query:
+        query_string = '?' + parse.urlencode({k: v for k, v in query.items() if v is not None})
+    url = f"{cfg['base_url']}{path}{query_string}"
+    data = None
+    if body is not None:
+        data = json.dumps(body, ensure_ascii=False).encode('utf-8')
+    req = urlrequest.Request(url=url, data=data, method=method.upper())
+    req.add_header('Authorization', f"Bearer {cfg['api_key']}")
+    req.add_header('Content-Type', 'application/json; charset=UTF-8')
+    req.add_header('Accept', 'application/json')
+    try:
+        with urlrequest.urlopen(req, timeout=30) as resp:
+            txt = resp.read().decode('utf-8') if resp else ''
+            return json.loads(txt) if txt else {}
+    except Exception as e:
+        raise ValueError(f'Dify 接口请求失败: {e}')
+
+
+def _extract_document_array(response: dict) -> list[dict]:
+    if not response:
+        return []
+    data = response.get('data')
+    if isinstance(data, list):
+        return [i for i in data if isinstance(i, dict)]
+    if isinstance(data, dict):
+        nested = data.get('data')
+        if isinstance(nested, list):
+            return [i for i in nested if isinstance(i, dict)]
+    return []
+
+
+def _extract_has_more(response: dict) -> bool:
+    if not response:
+        return False
+    has_more = response.get('has_more')
+    if isinstance(has_more, bool):
+        return has_more
+    data = response.get('data')
+    if isinstance(data, dict):
+        nested = data.get('has_more')
+        return bool(nested)
+    return False
+
+
+def _extract_created_document_id(response: dict) -> str:
+    if not response:
+        return ''
+    if isinstance(response.get('id'), str):
+        return response.get('id')
+    doc = response.get('document')
+    if isinstance(doc, dict) and isinstance(doc.get('id'), str):
+        return doc.get('id')
+    data = response.get('data')
+    if isinstance(data, dict):
+        if isinstance(data.get('id'), str):
+            return data.get('id')
+        nested = data.get('document')
+        if isinstance(nested, dict) and isinstance(nested.get('id'), str):
+            return nested.get('id')
+    return ''
+
+
+def _list_same_name_doc_ids(cfg: dict, doc_name: str) -> list[str]:
+    return [item.get('id') for item in _list_same_name_docs(cfg, doc_name) if item.get('id')]
+
+
+def _list_same_name_docs(cfg: dict, doc_name: str) -> list[dict]:
+    docs: list[dict] = []
+    page = 1
+    while True:
+        resp = _dify_request(
+            cfg,
+            'GET',
+            f"/datasets/{cfg['dataset_id']}/documents",
+            query={'page': page, 'limit': 100},
+        )
+        data = _extract_document_array(resp)
+        if not data:
+            break
+        for item in data:
+            if item.get('name') == doc_name and item.get('id'):
+                docs.append(item)
+        if not _extract_has_more(resp):
+            break
+        page += 1
+        if page > 200:
+            break
+    uniq: list[dict] = []
+    ids: list[str] = []
+    for d in docs:
+        did = str(d.get('id'))
+        if did in ids:
+            continue
+        ids.append(did)
+        uniq.append(d)
+    return uniq
+
+
+def _delete_document(cfg: dict, doc_id: str) -> None:
+    _dify_request(cfg, 'DELETE', f"/datasets/{cfg['dataset_id']}/documents/{doc_id}")
+
+
+def _create_document(cfg: dict, doc_name: str, doc_type: str, splitter: str, content: str) -> str:
+    body = {
+        'name': doc_name,
+        'text': content,
+        'indexing_technique': 'high_quality',
+        'process_rule': _build_process_rule(splitter),
+        'metadata': {'type': doc_type},
+    }
+    try:
+        resp = _dify_request(cfg, 'POST', f"/datasets/{cfg['dataset_id']}/document/create-by-text", body=body)
+    except Exception:
+        resp = _dify_request(cfg, 'POST', f"/datasets/{cfg['dataset_id']}/documents", body=body)
+    return _extract_created_document_id(resp)
+
+
+def _update_document_by_text(cfg: dict, doc_id: str, doc_name: str, splitter: str, content: str) -> str:
+    body = {
+        'name': doc_name,
+        'text': content,
+        'indexing_technique': 'high_quality',
+        'process_rule': _build_process_rule(splitter),
+    }
+    resp = _dify_request(
+        cfg, 'POST', f"/datasets/{cfg['dataset_id']}/documents/{doc_id}/update-by-text", body=body
+    )
+    return _extract_created_document_id(resp) or doc_id
+
+
+def _upsert_document(cfg: dict, doc_name: str, doc_type: str, splitter: str, content: str) -> tuple[str, int]:
+    docs = _list_same_name_docs(cfg, doc_name)
+    if not docs:
+        return _create_document(cfg, doc_name, doc_type, splitter, content), 0
+    keep_doc_id = str(docs[0].get('id'))
+    updated_id = _update_document_by_text(cfg, keep_doc_id, doc_name, splitter, content)
+    return updated_id, 0
+
+
+async def _resolve_category_path(db: AsyncSession, linked_category_id: Any) -> tuple[str, str, str]:
+    if not linked_category_id:
+        return '', '', ''
+    linked = await _fetch_one(
+        db,
+        "SELECT id, parent_id, level, category_name FROM material_category WHERE id = :id AND status = '1' LIMIT 1",
+        {'id': linked_category_id},
+    )
+    if not linked:
+        return '', '', ''
+    level = _to_int(linked.get('level'))
+    if level == 1:
+        return linked.get('category_name') or '', '', ''
+    if level == 2:
+        c1 = await _fetch_one(
+            db, "SELECT id, parent_id, category_name FROM material_category WHERE id = :id AND status = '1' LIMIT 1",
+            {'id': linked.get('parent_id')},
+        )
+        return c1.get('category_name') if c1 else '', linked.get('category_name') or '', ''
+    if level == 3:
+        c2 = await _fetch_one(
+            db,
+            "SELECT id, parent_id, category_name FROM material_category WHERE id = :id AND status = '1' LIMIT 1",
+            {'id': linked.get('parent_id')},
+        )
+        c1 = await _fetch_one(
+            db,
+            "SELECT category_name FROM material_category WHERE id = :id AND status = '1' LIMIT 1",
+            {'id': c2.get('parent_id') if c2 else None},
+        )
+        return (
+            c1.get('category_name') if c1 else '',
+            c2.get('category_name') if c2 else '',
+            linked.get('category_name') or '',
+        )
+    return '', linked.get('category_name') or '', ''
+
+
+async def _build_material_document_blocks(db: AsyncSession) -> list[str]:
+    std_name_category_code_map = _load_std_name_category_code_map()
+    category_rows = await _fetch_all(
+        db,
+        """
+        SELECT
+          c3.category_name AS level3Name,
+          c3.category_code AS level3Code,
+          c2.category_name AS level2Name,
+          c2.category_code AS level2Code,
+          c1.category_name AS level1Name,
+          c1.category_code AS level1Code
+        FROM material_category c3
+        LEFT JOIN material_category c2 ON c2.id = c3.parent_id AND c2.status = '1'
+        LEFT JOIN material_category c1 ON c1.id = c2.parent_id AND c1.status = '1'
+        WHERE c3.level = 3 AND c3.status = '1'
+        """,
+    )
+    category_path_by_merged_code: dict[str, tuple[str, str, str]] = {}
+    for c_row in category_rows:
+        merged_code = _merge_category_code(c_row.get('level1Code'), c_row.get('level2Code'), c_row.get('level3Code'))
+        if not merged_code:
+            continue
+        category_path_by_merged_code[merged_code] = (
+            c_row.get('level1Name') or '',
+            c_row.get('level2Name') or '',
+            c_row.get('level3Name') or '',
+        )
+
+    rows = await _fetch_all(
+        db,
+        """
+        SELECT id, std_name_code AS stdNameCode, standard_name AS standardName, category_level2_id AS linkedCategoryId
+        FROM material_std_name
+        WHERE status = '1' AND del_flag = '0'
+        ORDER BY id ASC
+        """,
+    )
+    blocks: list[str] = []
+    for row in rows:
+        c1_name, c2_name, c3_name = await _resolve_category_path(db, row.get('linkedCategoryId'))
+        if not c3_name:
+            std_name = _safe_text(row.get('standardName'))
+            mapped_code = std_name_category_code_map.get(std_name)
+            if mapped_code:
+                mapped_path = category_path_by_merged_code.get(mapped_code)
+                if mapped_path:
+                    c1_name, c2_name, c3_name = mapped_path
+        units = await _fetch_all(
+            db,
+            """
+            SELECT su.id AS relId,
+                   su.unit_name AS unitName,
+                   u.unit_biz_id AS unitBizId
+            FROM material_std_name_unit su
+            LEFT JOIN material_unit u ON u.id = su.unit_id
+            WHERE su.std_name_id = :sid AND su.del_flag = '0'
+            ORDER BY su.sort_order ASC, su.id ASC
+            """,
+            {'sid': row.get('id')},
+        )
+        unit_payload = []
+        for u in units:
+            unit_payload.append(
+                {
+                    '单位ID': u.get('unitBizId') or f"U{int(u.get('relId') or 0):04d}",
+                    '单位名称': u.get('unitName') or '',
+                }
+            )
+        specs = await _fetch_all(
+            db,
+            """
+            SELECT s.id AS specId,
+                   s.spec_key AS specKey,
+                   v.id AS specValueId,
+                   v.spec_value AS specValue,
+                   v.spec_value_code AS specValueCode
+            FROM material_std_name_spec s
+            LEFT JOIN material_std_name_spec_value v ON v.spec_id = s.id AND v.del_flag = '0'
+            WHERE s.std_name_id = :sid AND s.del_flag = '0'
+            ORDER BY s.sort_order ASC, s.id ASC, v.sort_order ASC, v.id ASC
+            """,
+            {'sid': row.get('id')},
+        )
+        spec_payload: dict[str, list[dict]] = {}
+        for s in specs:
+            spec_key = (s.get('specKey') or '').strip()
+            spec_value = (s.get('specValue') or '').strip()
+            if not spec_key or not spec_value:
+                continue
+            if spec_key not in spec_payload:
+                spec_payload[spec_key] = []
+            spec_payload[spec_key].append(
+                {'属性值ID': s.get('specValueCode') or f"V{int(s.get('specValueId') or 0):06d}", '属性值': spec_value}
+            )
+        payload = {
+            '标准材料ID': row.get('stdNameCode') or f"M{int(row.get('id') or 0):05d}",
+            '标准材料名称': row.get('standardName') or '',
+            '所属分类': {'一级分类': c1_name, '二级分类': c2_name, '三级分类': c3_name},
+            '标准单位': unit_payload,
+            '标准规格属性': spec_payload,
+        }
+        blocks.append(json.dumps(payload, ensure_ascii=False, indent=2))
+    return blocks
+
+
+async def _build_process_document_blocks(db: AsyncSession) -> list[str]:
+    rows = await _fetch_all(
+        db,
+        """
+        SELECT id, segment_biz_id AS segmentBizId, segment_name AS segmentName
+        FROM material_process_segment
+        WHERE status = '1'
+        ORDER BY segment_biz_id ASC, id ASC
+        """,
+    )
+    blocks: list[str] = []
+    for row in rows:
+        payload = {
+            '标准工艺段名称': row.get('segmentName') or '',
+            '标准工艺段ID': row.get('segmentBizId') or f"P{int(row.get('id') or 0):04d}",
+        }
+        blocks.append(json.dumps(payload, ensure_ascii=False, indent=2))
+    return blocks
+
+
+def _normalize_category_code_part(value: Any) -> str:
+    raw = ''.join(ch for ch in str(value or '').strip() if ch.isdigit())
+    if not raw:
+        return ''
+    if len(raw) == 1:
+        return f'0{raw}'
+    if len(raw) == 2:
+        return raw
+    return raw[-2:]
+
+
+def _merge_category_code(level1_code: Any, level2_code: Any, level3_code: Any) -> str:
+    merged = (
+        _normalize_category_code_part(level1_code)
+        + _normalize_category_code_part(level2_code)
+        + _normalize_category_code_part(level3_code)
+    )
+    if not merged:
+        return ''
+    return merged if merged.startswith('26') else f'26{merged}'
+
+
+async def _build_category_document_blocks(db: AsyncSession) -> list[str]:
+    rows = await _fetch_all(
+        db,
+        """
+        SELECT
+          c3.id AS level3Id,
+          c3.category_name AS level3Name,
+          c3.category_code AS level3Code,
+          c2.category_name AS level2Name,
+          c2.category_code AS level2Code,
+          c1.category_name AS level1Name,
+          c1.category_code AS level1Code
+        FROM material_category c3
+        LEFT JOIN material_category c2 ON c2.id = c3.parent_id AND c2.status = '1'
+        LEFT JOIN material_category c1 ON c1.id = c2.parent_id AND c1.status = '1'
+        WHERE c3.level = 3 AND c3.status = '1'
+        """,
+    )
+    rows.sort(
+        key=lambda row: (
+            _merge_category_code(row.get('level1Code'), row.get('level2Code'), row.get('level3Code')),
+            _to_int(row.get('level3Id'), 0),
+        )
+    )
+    blocks: list[str] = []
+    for row in rows:
+        payload = {
+            '一级分类': row.get('level1Name') or '',
+            '二级分类': row.get('level2Name') or '',
+            '三级分类': row.get('level3Name') or '',
+            '三级分类编码': _merge_category_code(row.get('level1Code'), row.get('level2Code'), row.get('level3Code')),
+        }
+        blocks.append(json.dumps(payload, ensure_ascii=False, indent=2))
+    return blocks
+
+
 @material_knowledge_controller.post('/sync')
 async def knowledge_sync(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
-    count = await _fetch_scalar(db, "SELECT COUNT(1) FROM material_standard WHERE del_flag = '0'") or 0
-    return ResponseUtil.success(data={'syncedItemCount': int(count), 'message': '知识库已更新（覆盖）'})
+    try:
+        cfg = _load_dify_config()
+        material_blocks = await _build_material_document_blocks(db)
+        process_blocks = await _build_process_document_blocks(db)
+        category_blocks = await _build_category_document_blocks(db)
+
+        material_doc_id, material_deleted_count = _upsert_document(
+            cfg, cfg['material_doc_name'], MATERIAL_DOCUMENT_TYPE, MATERIAL_SPLITTER, MATERIAL_SPLITTER.join(material_blocks)
+        )
+
+        process_doc_id, process_deleted_count = _upsert_document(
+            cfg, cfg['process_doc_name'], PROCESS_DOCUMENT_TYPE, PROCESS_SPLITTER, PROCESS_SPLITTER.join(process_blocks)
+        )
+        category_doc_id, category_deleted_count = _upsert_document(
+            cfg, cfg['category_doc_name'], CATEGORY_DOCUMENT_TYPE, CATEGORY_SPLITTER, CATEGORY_SPLITTER.join(category_blocks)
+        )
+
+        return ResponseUtil.success(
+            data={
+                'syncedItemCount': len(material_blocks) + len(process_blocks) + len(category_blocks),
+                'materialCount': len(material_blocks),
+                'processCount': len(process_blocks),
+                'categoryCount': len(category_blocks),
+                'deletedCount': int(material_deleted_count + process_deleted_count + category_deleted_count),
+                'materialDocumentId': material_doc_id,
+                'processDocumentId': process_doc_id,
+                'categoryDocumentId': category_doc_id,
+                'message': '知识库已更新（覆盖：标准材料数据 + 标准工艺段 + 标准分类）',
+            }
+        )
+    except Exception as e:
+        return ResponseUtil.failure(msg=f'知识库同步失败：{e}')

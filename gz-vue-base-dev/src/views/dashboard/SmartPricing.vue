@@ -6,7 +6,7 @@
         <div class="filter-row-primary">
           <!-- 核心筛选条件 -->
           <div class="filter-items">
-            <el-form-item label="任务名称">
+            <el-form-item>
               <el-input 
                 v-model="filterForm.taskName" 
                 placeholder="输入名称" 
@@ -14,7 +14,7 @@
                 clearable 
               />
             </el-form-item>
-            <el-form-item label="创建时间">
+            <el-form-item>
               <el-date-picker
                 v-model="filterForm.createTimeRange"
                 type="daterange"
@@ -27,7 +27,7 @@
                 clearable
               />
             </el-form-item>
-            <el-form-item label="状态">
+            <el-form-item>
               <el-select 
                 v-model="filterForm.status" 
                 placeholder="全部状态" 
@@ -69,7 +69,7 @@
         <!-- 高级筛选区域 -->
         <el-collapse-transition>
           <div v-show="showAdvanced" class="filter-row-secondary">
-            <el-form-item label="创建人">
+            <el-form-item>
               <el-input 
                 v-model="filterForm.creator" 
                 placeholder="输入人名" 

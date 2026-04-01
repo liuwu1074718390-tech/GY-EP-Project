@@ -15,8 +15,8 @@ DB_CONFIG = {
     'charset': 'utf8mb4'
 }
 
-DATABASE_NAME = 'ruoyi-fastapi'
-SQL_FILE = 'sql/ruoyi-fastapi.sql'
+DATABASE_NAME = 'GY-EP_local'
+SQL_FILE = 'sql/GY-EP_local.sql'
 
 def execute_sql_file(cursor, filepath):
     """执行SQL文件"""

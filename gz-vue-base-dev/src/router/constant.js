@@ -113,5 +113,12 @@ export default [
 		name: 'MaterialDetail',
 		hidden: true,
 		meta: { title: '材价详情' }
+	},
+	{
+		path: '/material-price/create',
+		component: () => import('@/views/dashboard/MaterialPriceCreate.vue'),
+		name: 'MaterialPriceCreate',
+		hidden: true,
+		meta: { title: '新增材价' }
 	}
 ];

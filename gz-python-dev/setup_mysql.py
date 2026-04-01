@@ -61,15 +61,15 @@ try:
     cursor = connection.cursor()
     
     # 删除旧数据库(如果存在)
-    cursor.execute("DROP DATABASE IF EXISTS `ruoyi-fastapi`")
+    cursor.execute("DROP DATABASE IF EXISTS `GY-EP_local`")
     print("  已删除旧数据库(如果存在)")
     
     # 创建新数据库
     cursor.execute(
-        "CREATE DATABASE `ruoyi-fastapi` "
+        "CREATE DATABASE `GY-EP_local` "
         "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     )
-    print("✓ 数据库 'ruoyi-fastapi' 创建成功")
+    print("✓ 数据库 'GY-EP_local' 创建成功")
     
     cursor.close()
     connection.close()
@@ -86,13 +86,13 @@ try:
         port=3306,
         user='root',
         password='mysqlroot',
-        database='ruoyi-fastapi',
+        database='GY-EP_local',
         charset='utf8mb4'
     )
     cursor = connection.cursor()
     
     # 读取SQL文件
-    sql_file = 'sql/ruoyi-fastapi.sql'
+    sql_file = 'sql/GY-EP_local.sql'
     print(f"  正在读取: {sql_file}")
     
     with open(sql_file, 'r', encoding='utf8') as f:
@@ -169,7 +169,7 @@ try:
     print("  端口: 3306")
     print("  用户: root")
     print("  密码: mysqlroot")
-    print("  数据库: ruoyi-fastapi")
+    print("  数据库: GY-EP_local")
     print("\n下一步:")
     print("  1. 重启后端服务")
     print("  2. 使用账号 'admin' 密码 'admin123' 登录")

@@ -4,7 +4,7 @@
 
 - 后端：仅 `gz-python-dev`（FastAPI，端口 `9099`）
 - 前端：`gz-vue-base-dev`（Vite，开发代理 `/dev-api -> 9099`）
-- 数据库：本地 MySQL `127.0.0.1:3306/ruoyi-fastapi`
+- 数据库：本地 MySQL `127.0.0.1:3306/GY-EP_local`
 - Java：`gz-springboot-base-dev` 不再作为运行依赖
 
 ## 启动方式
@@ -29,6 +29,6 @@
 
 ## 数据库要求
 
-- 统一使用库名：`ruoyi-fastapi`
+- 统一使用库名：`GY-EP_local`
 - Python 配置固定连接：`127.0.0.1:3306`
-- 已执行的业务增量脚本需落在 `ruoyi-fastapi`（包含标准工艺段相关表）
+- 已执行的业务增量脚本需落在 `GY-EP_local`（包含标准工艺段相关表）

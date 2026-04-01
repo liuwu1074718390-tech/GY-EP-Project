@@ -54,7 +54,7 @@
 
 <script setup>
 import { useRoute, useRouter } from 'vue-router';
-import { ref, getCurrentInstance, watch } from 'vue';
+import { ref, getCurrentInstance } from 'vue';
 import { getCodeImg } from '@/api/login';
 import { Cookies } from '@/plugins/cache';
 import { encrypt, decrypt } from '@/utils/jsencrypt';
@@ -85,15 +85,6 @@ const loading = ref(false);
 const captchaEnabled = ref(true);
 // 注册开关
 const register = ref(false);
-const redirect = ref(undefined);
-
-watch(
-	route,
-	newRoute => {
-		redirect.value = newRoute.query && newRoute.query.redirect;
-	},
-	{ immediate: true }
-);
 
 function handleLogin() {
 	proxy.$refs.loginRef.validate(valid => {
@@ -123,7 +114,7 @@ function handleLogin() {
 						}
 						return acc;
 					}, {});
-					router.push({ path: redirect.value || '/workbench', query: otherQueryParams });
+					router.push({ path: '/workbench', query: otherQueryParams });
 				})
 				.catch(() => {
 					loading.value = false;

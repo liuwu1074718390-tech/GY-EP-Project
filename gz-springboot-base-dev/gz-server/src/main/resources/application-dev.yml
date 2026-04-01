@@ -5,7 +5,7 @@ spring:
     hikari:
       # 主库数据源
       master:
-        url: jdbc:mysql://127.0.0.1:3306/ruoyi-fastapi?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+        url: jdbc:mysql://127.0.0.1:3306/GY-EP_local?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
         username: root
         password: mysqlroot
         driverClassName: com.mysql.cj.jdbc.Driver
@@ -13,7 +13,7 @@ spring:
       slave:
         # 从数据源开关/默认关闭
         enabled: true
-        url: jdbc:mysql://127.0.0.1:3306/ruoyi-fastapi?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+        url: jdbc:mysql://127.0.0.1:3306/GY-EP_local?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
         username: root
         password: mysqlroot
         driverClassName: com.mysql.cj.jdbc.Driver

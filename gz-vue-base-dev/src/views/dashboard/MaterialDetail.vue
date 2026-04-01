@@ -3,18 +3,39 @@
     <!-- 上部区域：材价基础信息 -->
     <section class="info-section glass-card">
       <div class="section-header">
-        <div class="title-row">
-          <span class="material-name">{{ materialInfo.materialName }}</span>
-          <el-tag effect="plain" type="info" class="category-tag">{{ materialInfo.categoryName }}</el-tag>
+        <div class="header-top">
+          <div class="title-row">
+            <span class="material-name">{{ getDisplayMaterialName(materialInfo) }}</span>
+            <el-tag v-if="getDisplayCategoryName(materialInfo) !== '-'" effect="plain" type="info" class="category-tag">{{ getDisplayCategoryName(materialInfo) }}</el-tag>
+          </div>
+          <div class="data-view-switch-pill">
+            <button
+              type="button"
+              class="switch-item"
+              :class="{ active: detailViewMode === 'NON_STANDARD' }"
+              @click="setDetailViewMode('NON_STANDARD')"
+            >
+              非标准
+            </button>
+            <span class="switch-divider" />
+            <button
+              type="button"
+              class="switch-item"
+              :class="{ active: detailViewMode === 'STANDARD' }"
+              @click="setDetailViewMode('STANDARD')"
+            >
+              标准
+            </button>
+          </div>
         </div>
         <div class="spec-row">
           <span class="label">规格型号：</span>
-          <span class="value">{{ materialInfo.specification }}</span>
+          <span class="value">{{ getDisplaySpecification(materialInfo) }}</span>
         </div>
       </div>
 
       <el-descriptions :column="4" border class="custom-desc">
-        <el-descriptions-item label="单位">{{ materialInfo.unit }}</el-descriptions-item>
+        <el-descriptions-item label="单位">{{ getDisplayUnit(materialInfo) }}</el-descriptions-item>
         <el-descriptions-item label="数量">{{ materialInfo.quantity }}</el-descriptions-item>
         <el-descriptions-item label="品牌">{{ materialInfo.brand }}</el-descriptions-item>
         <el-descriptions-item label="供应商">
@@ -23,12 +44,12 @@
         <el-descriptions-item label="来源项目">{{ materialInfo.sourceProject }}</el-descriptions-item>
         
         <el-descriptions-item label="不含税价">
-          <span class="price-normal">¥{{ formatPrice(materialInfo.priceExcludingTax) }}</span>
+          <span class="price-normal">{{ formatPriceText(getDisplayPriceExcludingTax(materialInfo)) }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="含税价">
-          <span class="price-normal">¥{{ formatPrice(materialInfo.priceIncludingTax) }}</span>
+          <span class="price-normal">{{ formatPriceText(getDisplayPriceIncludingTax(materialInfo)) }}</span>
         </el-descriptions-item>
-        <el-descriptions-item label="税率">{{ materialInfo.taxRate }}%</el-descriptions-item>
+        <el-descriptions-item label="税率">{{ formatTaxRateText(materialInfo.taxRate) }}</el-descriptions-item>
         <el-descriptions-item label="价格类型">
             <el-tag :type="materialInfo.priceType === '中标价' ? 'success' : 'warning'" size="small">
               {{ materialInfo.priceType }}
@@ -40,16 +61,16 @@
       <!-- 统计概览 -->
       <div class="stats-row" v-if="stats.count > 1">
          <div class="stat-item">
-            <span class="stat-label">历史最高(不含税)</span>
-            <span class="stat-value">¥{{ formatPrice(stats.maxExcl) }}</span>
+            <span class="stat-label">历史最高({{ stats.metricLabel }})</span>
+            <span class="stat-value">{{ formatStatPriceText(stats.maxPrice) }}</span>
          </div>
          <div class="stat-item">
-            <span class="stat-label">历史最低(不含税)</span>
-            <span class="stat-value success">¥{{ formatPrice(stats.minExcl) }}</span>
+            <span class="stat-label">历史最低({{ stats.metricLabel }})</span>
+            <span class="stat-value success">{{ formatStatPriceText(stats.minPrice) }}</span>
          </div>
          <div class="stat-item">
-            <span class="stat-label">平均价(不含税)</span>
-            <span class="stat-value primary">¥{{ formatPrice(stats.avgExcl) }}</span>
+            <span class="stat-label">平均价({{ stats.metricLabel }})</span>
+            <span class="stat-value primary">{{ formatStatPriceText(stats.avgPrice) }}</span>
          </div>
          <div class="stat-item">
             <span class="stat-label">样本数量</span>
@@ -76,25 +97,29 @@
         <el-table-column type="index" label="序号" width="55" align="center" fixed />
         <el-table-column prop="materialName" label="材料名称" min-width="120" show-overflow-tooltip fixed>
              <template #default="{ row }">
-                 <span>{{ row.materialName }}</span>
+                 <span>{{ getDisplayMaterialName(row) }}</span>
                  <el-tag v-if="row.id === materialInfo.id" size="small" type="danger" effect="plain" class="current-tag">本条</el-tag>
              </template>
         </el-table-column>
-        <el-table-column prop="specification" label="规格型号" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="unit" label="单位" width="55" align="center" />
+        <el-table-column prop="specification" label="规格型号" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">{{ getDisplaySpecification(row) }}</template>
+        </el-table-column>
+        <el-table-column prop="unit" label="单位" width="55" align="center">
+          <template #default="{ row }">{{ getDisplayUnit(row) }}</template>
+        </el-table-column>
         <el-table-column prop="quantity" label="数量" width="60" align="center" />
         
         <el-table-column prop="priceExcludingTax" label="不含税价" width="130" align="right" sortable>
              <template #default="{ row }">
-                <span :class="getPriceClass(row.priceExcludingTax)">¥{{ formatPrice(row.priceExcludingTax) }}</span>
+                <span :class="getPriceClass(getDisplayPriceExcludingTax(row))">{{ formatPriceText(getDisplayPriceExcludingTax(row)) }}</span>
              </template>
         </el-table-column>
         <el-table-column prop="priceIncludingTax" label="含税价" width="130" align="right">
-             <template #default="{ row }">¥{{ formatPrice(row.priceIncludingTax) }}</template>
+             <template #default="{ row }">{{ formatPriceText(getDisplayPriceIncludingTax(row)) }}</template>
         </el-table-column>
         <el-table-column prop="purchaseTime" label="采购时间" width="120" align="center" sortable />
         <el-table-column prop="taxRate" label="税率" width="60" align="center">
-             <template #default="{ row }">{{ row.taxRate }}%</template>
+             <template #default="{ row }">{{ formatTaxRateText(row.taxRate) }}</template>
         </el-table-column>
         <el-table-column prop="brand" label="品牌" width="90" show-overflow-tooltip />
         <el-table-column prop="supplierCompany" label="供应商" min-width="150" show-overflow-tooltip>
@@ -119,6 +144,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { materialPriceData } from './mockMaterialData'
+import { getMaterialPriceById, pageMaterialPrice } from '@/api/materialPrice'
 import { TrendCharts, ArrowLeft, CaretTop, CaretBottom, Minus } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -126,28 +152,119 @@ const router = useRouter()
 
 const materialInfo = ref({})
 const relatedList = ref([])
+const useServerData = ref(true)
+const detailViewMode = ref((route.query.dataViewMode || 'NON_STANDARD').toString().toUpperCase() === 'STANDARD' ? 'STANDARD' : 'NON_STANDARD')
+const isStandardMode = computed(() => detailViewMode.value === 'STANDARD')
+
+const getDisplayMaterialName = (row) => {
+  if (!row) return '-'
+  if (isStandardMode.value) return row.standardStdName || row.materialName || '-'
+  return row.materialName || '-'
+}
+
+const getDisplaySpecification = (row) => {
+  if (!row) return '-'
+  if (isStandardMode.value) return row.standardSpecSummary || row.specification || '-'
+  return row.specification || '-'
+}
+
+const getDisplayUnit = (row) => {
+  if (!row) return '-'
+  if (isStandardMode.value) return row.standardUnitName || row.unit || '-'
+  return row.unit || '-'
+}
+
+const getDisplayCategoryName = (row) => {
+  if (!row) return '-'
+  if (isStandardMode.value) return row.standardCategoryLevel3Name || row.categoryName || '-'
+  return row.categoryName || '-'
+}
+
+const getDisplayPriceExcludingTax = (row) => {
+  if (!row) return null
+  if (isStandardMode.value) return row.normalizedPriceExcludingTax ?? row.priceExcludingTax
+  return row.priceExcludingTax
+}
+
+const getDisplayPriceIncludingTax = (row) => {
+  if (!row) return null
+  if (isStandardMode.value) return row.normalizedPriceIncludingTax ?? row.priceIncludingTax
+  return row.priceIncludingTax
+}
+
+const isEmptyMetricValue = (value) => {
+  if (value === null || value === undefined || value === '') return true
+  const num = Number(value)
+  return Number.isNaN(num) || num === 0
+}
+
+const formatPriceText = (value) => {
+  if (isEmptyMetricValue(value)) return '-'
+  return `¥${Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+const formatTaxRateText = (value) => {
+  if (isEmptyMetricValue(value)) return '-'
+  return `${Number(value)}%`
+}
 
 // 初始化/加载数据
-const loadData = () => {
+const loadData = async () => {
   const { name, spec, id } = route.query
-  if (!name) return
-  
-  // 1. 获取当前点击的那条主记录
-  // 如果有 id，优先用 id 找
-  if (id) {
-      materialInfo.value = materialPriceData.find(m => m.id == id) || {}
-  }
-  
-  // 如果没找到或者没传 id，尝试用第一条匹配的（兜底）
-  if (!materialInfo.value.id) {
-      materialInfo.value = materialPriceData.find(m => m.materialName === name && m.specification === spec) || {}
+  if (!name && !id) return
+
+  if (useServerData.value) {
+    try {
+      let detail = null
+      const listRes = await pageMaterialPrice({
+        pageNum: 1,
+        pageSize: 1000,
+        materialName: name,
+        specification: spec,
+        dataViewMode: detailViewMode.value
+      })
+      relatedList.value = (listRes.records || []).sort((a, b) => String(b.purchaseTime || '').localeCompare(String(a.purchaseTime || '')))
+
+      if (id) {
+        detail = relatedList.value.find(item => String(item.id) === String(id)) || null
+      }
+
+      if (!detail && id) {
+        detail = await getMaterialPriceById(id)
+      }
+
+      if (!detail && relatedList.value.length > 0) {
+        detail = relatedList.value[0]
+      }
+
+      if (detail) {
+        materialInfo.value = detail
+        return
+      }
+    } catch (error) {
+      useServerData.value = false
+    }
   }
 
-  // 2. 获取同规格列表
-  relatedList.value = materialPriceData.filter(m => 
-      m.materialName === name && 
-      m.specification === spec
-  ).sort((a, b) => b.purchaseTime.localeCompare(a.purchaseTime)) // 默认按时间倒序
+  // 本地数据兜底
+  if (id) {
+    materialInfo.value = materialPriceData.find(m => m.id == id) || {}
+  }
+  if (!materialInfo.value.id) {
+    materialInfo.value = materialPriceData.find(m => m.materialName === name && m.specification === spec) || {}
+  }
+  relatedList.value = materialPriceData.filter(m =>
+    m.materialName === (materialInfo.value.materialName || name) &&
+    m.specification === (materialInfo.value.specification || spec)
+  ).sort((a, b) => String(b.purchaseTime || '').localeCompare(String(a.purchaseTime || '')))
+}
+
+const setDetailViewMode = (mode) => {
+  if (detailViewMode.value === mode) return
+  detailViewMode.value = mode
+  useServerData.value = true
+  router.replace({ query: { ...route.query, dataViewMode: mode } })
+  loadData()
 }
 
 /**
@@ -175,6 +292,10 @@ onMounted(() => {
 // 监听路由参数变化（特别是 tab 仍为 '材价详情' 但 id 变了的情况，虽然这种情况较少）
 watch(() => route.query.id, () => loadData())
 watch(() => route.query.name, () => loadData())
+watch(() => route.query.dataViewMode, (val) => {
+  const mode = (val || 'NON_STANDARD').toString().toUpperCase() === 'STANDARD' ? 'STANDARD' : 'NON_STANDARD'
+  detailViewMode.value = mode
+})
 
 // 返回列表页
 const goBack = () => {
@@ -185,27 +306,58 @@ const goBack = () => {
 // 统计信息
 const stats = computed(() => {
     const list = relatedList.value
-    if (list.length === 0) return { count: 0 }
-    
-    const prices = list.map(i => i.priceExcludingTax)
+    if (list.length === 0) {
+      return { count: 0, validCount: 0, metricLabel: '不含税', maxPrice: null, minPrice: null, avgPrice: null }
+    }
+
+    const exclPrices = list
+      .map(item => Number(getDisplayPriceExcludingTax(item)))
+      .filter(price => Number.isFinite(price) && price > 0)
+
+    const inclPrices = list
+      .map(item => Number(getDisplayPriceIncludingTax(item)))
+      .filter(price => Number.isFinite(price) && price > 0)
+
+    const useExcl = exclPrices.length > 0
+    const prices = useExcl ? exclPrices : inclPrices
+    const metricLabel = useExcl ? '不含税' : '含税'
+
+    if (prices.length === 0) {
+      return {
+        count: list.length,
+        validCount: 0,
+        metricLabel,
+        maxPrice: null,
+        minPrice: null,
+        avgPrice: null
+      }
+    }
+
     const sum = prices.reduce((a, b) => a + b, 0)
-    
+
     return {
-        maxExcl: Math.max(...prices),
-        minExcl: Math.min(...prices),
-        avgExcl: sum / list.length,
-        count: list.length
+        maxPrice: Math.max(...prices),
+        minPrice: Math.min(...prices),
+        avgPrice: sum / prices.length,
+        count: list.length,
+        validCount: prices.length,
+        metricLabel
     }
 })
 
-const formatPrice = (p) => {
-    return p ? p.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'
+const formatStatPriceText = (value) => {
+    if (!Number.isFinite(Number(value)) || Number(value) <= 0) {
+      return '-'
+    }
+    return `¥${Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 const getPriceClass = (p) => {
-    if (!stats.value.avgExcl) return ''
-    if (p < stats.value.avgExcl) return 'text-success'
-    if (p > stats.value.avgExcl) return 'text-warning'
+    const price = Number(p)
+    const avg = Number(stats.value.avgPrice)
+    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(avg) || avg <= 0) return ''
+    if (price < avg) return 'text-success'
+    if (price > avg) return 'text-warning'
     return ''
 }
 
@@ -284,6 +436,12 @@ $glass-border: rgba(255, 255, 255, 0.5);
 .info-section {
     .section-header {
         margin-bottom: 24px;
+        .header-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
         .title-row {
             display: flex;
             align-items: center;
@@ -300,6 +458,42 @@ $glass-border: rgba(255, 255, 255, 0.5);
             color: #606266;
             font-size: 14px;
             .value { color: #303133; font-weight: 500; }
+        }
+
+        .data-view-switch-pill {
+          display: inline-flex;
+          align-items: center;
+          height: 32px;
+          padding: 0 6px;
+          border-radius: 6px;
+          border: 1px solid #d9e2f2;
+          background: #f4f7fc;
+
+          .switch-item {
+            height: 24px;
+            min-width: 74px;
+            padding: 0 12px;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            color: #5f6b7a;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &.active {
+              color: #1f6feb;
+              background: #e8f1ff;
+              font-weight: 600;
+            }
+          }
+
+          .switch-divider {
+            width: 1px;
+            height: 16px;
+            margin: 0 6px;
+            background: #d9e2f2;
+          }
         }
     }
     

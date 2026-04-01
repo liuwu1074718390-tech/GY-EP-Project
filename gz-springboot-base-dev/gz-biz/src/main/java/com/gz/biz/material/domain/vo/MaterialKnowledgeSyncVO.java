@@ -21,5 +21,14 @@ public class MaterialKnowledgeSyncVO implements Serializable {
     private String createdDocumentId;
 
     private Integer syncedItemCount;
-}
 
+    private Integer materialCount;
+
+    private Integer processCount;
+
+    private Integer categoryCount;
+
+    private String processDocumentId;
+
+    private String categoryDocumentId;
+}

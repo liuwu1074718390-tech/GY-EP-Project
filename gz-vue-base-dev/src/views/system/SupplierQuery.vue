@@ -42,6 +42,14 @@
           />
         </div>
 
+        <div
+          class="all-category-option"
+          :class="{ active: selectedCategoryKey === ALL_CATEGORY_KEY }"
+          @click="handleSelectAllCategory"
+        >
+          全部分类
+        </div>
+
         <el-tree
           ref="categoryTreeRef"
           :data="filteredCategoryTree"
@@ -49,6 +57,7 @@
           :indent="12"
           node-key="id"
           highlight-current
+          :expand-on-click-node="false"
           @node-click="handleCategorySelect"
           :default-expand-all="true"
           :filter-node-method="filterNode"
@@ -56,7 +65,7 @@
           <template #default="{ node, data }">
             <div class="custom-tree-node">
               <span class="node-prefix">{{ formatDisplayCategoryCode(node, data) }}</span>
-              <span class="node-label">{{ node.label }}</span>
+              <span v-overflow-title="node.label" class="node-label">{{ node.label }}</span>
             </div>
           </template>
         </el-tree>
@@ -67,50 +76,61 @@
     <main class="main-content" :class="{ expanded: sidebarCollapsed }">
       <!-- 筛选区 -->
       <section class="filter-panel-glass">
-        <el-form :model="queryForm" inline size="default" class="custom-query-form">
-          <div class="filter-inputs">
-            <el-form-item label="供应商名称">
-              <el-input v-model="queryForm.supplierName" placeholder="输入名称" clearable style="width: 140px" />
-            </el-form-item>
-            <el-form-item label="品牌">
-              <el-select v-model="queryForm.brandName" placeholder="全部品牌" clearable filterable style="width: 140px">
-                <el-option v-for="item in brandList" :key="item.id" :label="item.brandName" :value="item.brandName" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="地区">
-              <el-cascader
-                v-model="queryForm.region"
-                :options="regionOptions"
-                :props="{ value: 'name', label: 'name', children: 'children' }"
-                placeholder="选择地区"
-                clearable
-                style="width: 140px"
-                @change="handleRegionChange"
-              />
-            </el-form-item>
-            <el-form-item label="联系人">
-              <el-input v-model="queryForm.contactPerson" placeholder="输入联系人" clearable style="width: 140px" />
-            </el-form-item>
-            <el-form-item label="联系方式">
-              <el-input v-model="queryForm.contactPhone" placeholder="输入电话" clearable style="width: 140px" />
-            </el-form-item>
-            <el-form-item label="入库时间">
-              <el-date-picker
-                v-model="queryForm.dateRange"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
-                style="width: 240px"
-                @change="handleDateChange"
-              />
-            </el-form-item>
+        <el-form :model="queryForm" size="default" class="custom-query-form">
+          <div class="filter-row-primary">
+            <div class="filter-inputs">
+              <el-form-item>
+                <el-input v-model="queryForm.supplierName" placeholder="输入名称" clearable style="width: 140px" />
+              </el-form-item>
+              <el-form-item>
+                <el-select v-model="queryForm.brandName" placeholder="全部品牌" clearable filterable style="width: 140px">
+                  <el-option v-for="item in brandList" :key="item.id" :label="item.brandName" :value="item.brandName" />
+                </el-select>
+              </el-form-item>
+              <el-form-item>
+                <el-cascader
+                  v-model="queryForm.region"
+                  :options="regionOptions"
+                  :props="{ value: 'name', label: 'name', children: 'children' }"
+                  placeholder="选择地区"
+                  clearable
+                  style="width: 140px"
+                  @change="handleRegionChange"
+                />
+              </el-form-item>
+            </div>
+            <div class="filter-btns">
+              <el-button type="primary" @click="handleQuery" icon="Search" class="btn-search">查询</el-button>
+              <el-button @click="handleReset" icon="Refresh" class="btn-reset">重置</el-button>
+              <el-button type="success" @click="handleAdd" icon="Plus" class="btn-add">新增供应商</el-button>
+              <el-button link type="primary" @click="showAdvanced = !showAdvanced" class="btn-advanced-toggle">
+                {{ showAdvanced ? '收起' : '高级' }}
+                <el-icon class="el-icon--right"><component :is="showAdvanced ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
+              </el-button>
+            </div>
           </div>
-          <div class="filter-btns">
-            <el-button type="primary" @click="handleQuery" icon="Search" class="btn-search">查询</el-button>
-            <el-button @click="handleReset" icon="Refresh" class="btn-reset">重置</el-button>
-            <el-button type="success" @click="handleAdd" icon="Plus" class="btn-add">新增供应商</el-button>
-          </div>
+
+          <el-collapse-transition>
+            <div v-show="showAdvanced" class="filter-row-secondary">
+              <el-form-item>
+                <el-input v-model="queryForm.contactPerson" placeholder="输入联系人" clearable style="width: 140px" />
+              </el-form-item>
+              <el-form-item>
+                <el-input v-model="queryForm.contactPhone" placeholder="输入电话" clearable style="width: 140px" />
+              </el-form-item>
+              <el-form-item>
+                <el-date-picker
+                  v-model="queryForm.dateRange"
+                  type="daterange"
+                  range-separator="至"
+                  start-placeholder="开始日期"
+                  end-placeholder="结束日期"
+                  style="width: 240px"
+                  @change="handleDateChange"
+                />
+              </el-form-item>
+            </div>
+          </el-collapse-transition>
         </el-form>
       </section>
 
@@ -420,6 +440,9 @@ const categoryTreeRef = ref()
 const filteredCategoryTree = ref([])
 const isExpandAll = ref(true)
 const expandedKeys = ref([])
+const ALL_CATEGORY_KEY = 'ALL'
+const selectedCategoryKey = ref(ALL_CATEGORY_KEY)
+const showAdvanced = ref(false)
 
 const toggleExpandAll = () => {
   isExpandAll.value = !isExpandAll.value
@@ -537,6 +560,7 @@ const loadCategoryTree = async () => {
   const res = await getCategoryTree()
   categoryTree.value = res.data || res || []
   filteredCategoryTree.value = categoryTree.value
+  handleSelectAllCategory(false)
 }
 
 // 加载品牌列表
@@ -594,6 +618,35 @@ const formatDisplayCategoryCode = (node, data) => {
   return mergedCode.startsWith('26') ? mergedCode : `26${mergedCode}`
 }
 
+const setOverflowTitle = (el, text) => {
+  const value = text == null ? '' : String(text)
+  if (el.scrollWidth > el.clientWidth) {
+    el.setAttribute('title', value)
+  } else {
+    el.removeAttribute('title')
+  }
+}
+
+const vOverflowTitle = {
+  mounted(el, binding) {
+    const handler = () => setOverflowTitle(el, binding.value)
+    el.__overflowTitleHandler__ = handler
+    el.addEventListener('mouseenter', handler)
+    window.addEventListener('resize', handler)
+    requestAnimationFrame(handler)
+  },
+  updated(el, binding) {
+    setOverflowTitle(el, binding.value)
+  },
+  unmounted(el) {
+    const handler = el.__overflowTitleHandler__
+    if (!handler) return
+    el.removeEventListener('mouseenter', handler)
+    window.removeEventListener('resize', handler)
+    delete el.__overflowTitleHandler__
+  }
+}
+
 // 查询列表
 const handleQuery = async () => {
   loading.value = true
@@ -629,6 +682,7 @@ const handleReset = () => {
   categorySearchText.value = ''
   filteredCategoryTree.value = categoryTree.value
   expandedKeys.value = []
+  handleSelectAllCategory(false)
   handleQuery()
 }
 
@@ -658,6 +712,7 @@ const handleDateChange = (value) => {
 
 // 分类树节点点击
 const handleCategorySelect = (data) => {
+  selectedCategoryKey.value = data.id
   if (data.level === 1) {
     queryForm.categoryLevel1Id = data.id
     queryForm.categoryLevel2Id = null
@@ -670,6 +725,20 @@ const handleCategorySelect = (data) => {
   }
   queryForm.pageNum = 1
   handleQuery()
+}
+
+const handleSelectAllCategory = (withQuery = true) => {
+  selectedCategoryKey.value = ALL_CATEGORY_KEY
+  queryForm.categoryLevel1Id = null
+  queryForm.categoryLevel2Id = null
+  queryForm.categoryLevel3Id = null
+  queryForm.pageNum = 1
+  nextTick(() => {
+    categoryTreeRef.value?.setCurrentKey(null)
+  })
+  if (withQuery) {
+    handleQuery()
+  }
 }
 
 // 新增
@@ -971,6 +1040,31 @@ $border-glass: rgba(255, 255, 255, 0.5);
       margin-bottom: 12px;
       padding: 0;
     }
+
+    .all-category-option {
+      height: 34px;
+      line-height: 34px;
+      margin-bottom: 8px;
+      padding: 0 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #606266;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(55, 124, 253, 0.08);
+        color: #377cfd;
+      }
+
+      &.active {
+        background: rgba(55, 124, 253, 0.12);
+        color: #377cfd;
+        font-weight: 600;
+      }
+    }
   }
 }
 
@@ -994,12 +1088,33 @@ $border-glass: rgba(255, 255, 255, 0.5);
   
   .custom-query-form {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     flex-wrap: wrap;
     gap: 12px;
 
-    .filter-inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .filter-row-primary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-row-secondary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding-top: 2px;
+    }
 
     :deep(.el-form-item) { margin-bottom: 4px; margin-right: 12px; }
     :deep(.el-form-item__label) {
@@ -1021,11 +1136,14 @@ $border-glass: rgba(255, 255, 255, 0.5);
 
   .filter-btns {
     display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
     
     .btn-search { border-radius: 12px; padding: 0 20px; }
     .btn-reset { border-radius: 12px; background: rgba(0,0,0,0.03); border: none; }
     .btn-add { border-radius: 12px; background: #00c261; border: none; }
+    .btn-advanced-toggle { padding: 0 6px; }
   }
 }
 

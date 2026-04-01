@@ -47,7 +47,7 @@ python add_route_name_field.py
 
 #### 选项B: 使用MySQL命令行
 ```bash
-mysql -u root -pmysqlroot ruoyi-fastapi << EOF
+mysql -u root -pmysqlroot GY-EP_local << EOF
 ALTER TABLE sys_menu 
 ADD COLUMN route_name varchar(50) DEFAULT '' COMMENT '路由名称' 
 AFTER query;
@@ -57,7 +57,7 @@ EOF
 #### 选项C: 使用数据库管理工具
 如果你使用Navicat、MySQL Workbench或其他数据库管理工具:
 
-1. 连接到数据库 `ruoyi-fastapi`
+1. 连接到数据库 `GY-EP_local`
 2. 打开SQL编辑器
 3. 执行以下SQL:
 ```sql
@@ -89,13 +89,13 @@ python app.py --env=dev
 
 ```bash
 # 1. 删除旧数据库(谨慎操作!)
-mysql -u root -pmysqlroot -e "DROP DATABASE IF EXISTS \`ruoyi-fastapi\`;"
+mysql -u root -pmysqlroot -e "DROP DATABASE IF EXISTS \`GY-EP_local\`;"
 
 # 2. 创建新数据库
-mysql -u root -pmysqlroot -e "CREATE DATABASE \`ruoyi-fastapi\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -pmysqlroot -e "CREATE DATABASE \`GY-EP_local\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # 3. 导入SQL文件
-mysql -u root -pmysqlroot ruoyi-fastapi < sql/ruoyi-fastapi.sql
+mysql -u root -pmysqlroot GY-EP_local < sql/GY-EP_local.sql
 ```
 
 ## 常见问题
@@ -119,4 +119,4 @@ A: 检查 `.env.dev` 文件中的数据库密码配置是否正确。
 
 - SQL脚本: `add_route_name_column.sql`
 - Python脚本: `add_route_name_field.py`
-- 完整SQL文件: `sql/ruoyi-fastapi.sql`
+- 完整SQL文件: `sql/GY-EP_local.sql`

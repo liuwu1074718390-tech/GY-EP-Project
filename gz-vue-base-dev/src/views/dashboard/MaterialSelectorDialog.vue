@@ -10,7 +10,7 @@
     <!-- 筛选区域 -->
     <div class="filter-section">
       <el-form :model="filterForm" inline size="default">
-        <el-form-item label="材料名称">
+        <el-form-item>
           <el-input 
             v-model="filterForm.materialName" 
             placeholder="请输入材料名称"
@@ -18,7 +18,7 @@
             style="width: 180px"
           />
         </el-form-item>
-        <el-form-item label="规格型号">
+        <el-form-item>
           <el-input 
             v-model="filterForm.specification" 
             placeholder="请输入规格型号"
@@ -26,7 +26,7 @@
             style="width: 180px"
           />
         </el-form-item>
-        <el-form-item label="品牌">
+        <el-form-item>
           <el-input 
             v-model="filterForm.brand" 
             placeholder="请输入品牌"

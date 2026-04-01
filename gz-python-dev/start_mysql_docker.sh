@@ -43,7 +43,7 @@ else
       --name mysql-ruoyi \
       -p 3306:3306 \
       -e MYSQL_ROOT_PASSWORD=mysqlroot \
-      -e MYSQL_DATABASE=ruoyi-fastapi \
+      -e MYSQL_DATABASE=GY-EP_local \
       mysql:8.0 \
       --character-set-server=utf8mb4 \
       --collation-server=utf8mb4_unicode_ci
@@ -82,8 +82,8 @@ echo ""
 echo "正在导入SQL文件..."
 
 # 导入SQL文件
-if [ -f "sql/ruoyi-fastapi.sql" ]; then
-    docker exec -i mysql-ruoyi mysql -uroot -pmysqlroot ruoyi-fastapi < sql/ruoyi-fastapi.sql
+if [ -f "sql/GY-EP_local.sql" ]; then
+    docker exec -i mysql-ruoyi mysql -uroot -pmysqlroot GY-EP_local < sql/GY-EP_local.sql
     
     if [ $? -eq 0 ]; then
         echo "✓ SQL文件导入成功"
@@ -92,13 +92,13 @@ if [ -f "sql/ruoyi-fastapi.sql" ]; then
         exit 1
     fi
 else
-    echo "✗ SQL文件不存在: sql/ruoyi-fastapi.sql"
+    echo "✗ SQL文件不存在: sql/GY-EP_local.sql"
     exit 1
 fi
 
 echo ""
 echo "验证数据库表..."
-table_count=$(docker exec mysql-ruoyi mysql -uroot -pmysqlroot -D ruoyi-fastapi -e "SHOW TABLES;" 2>/dev/null | wc -l)
+table_count=$(docker exec mysql-ruoyi mysql -uroot -pmysqlroot -D GY-EP_local -e "SHOW TABLES;" 2>/dev/null | wc -l)
 table_count=$((table_count - 1))  # 减去表头
 
 if [ $table_count -gt 0 ]; then
@@ -110,7 +110,7 @@ fi
 
 echo ""
 echo "验证 route_name 字段..."
-if docker exec mysql-ruoyi mysql -uroot -pmysqlroot -D ruoyi-fastapi -e "DESCRIBE sys_menu;" 2>/dev/null | grep -q "route_name"; then
+if docker exec mysql-ruoyi mysql -uroot -pmysqlroot -D GY-EP_local -e "DESCRIBE sys_menu;" 2>/dev/null | grep -q "route_name"; then
     echo "✓ route_name 字段存在"
 else
     echo "✗ route_name 字段不存在"
@@ -127,7 +127,7 @@ echo "  主机: 127.0.0.1"
 echo "  端口: 3306"
 echo "  用户: root"
 echo "  密码: mysqlroot"
-echo "  数据库: ruoyi-fastapi"
+echo "  数据库: GY-EP_local"
 echo ""
 echo "Docker容器管理命令:"
 echo "  启动: docker start mysql-ruoyi"

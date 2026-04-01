@@ -55,7 +55,7 @@ docker run -d \
   --name mysql-ruoyi \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD=mysqlroot \
-  -e MYSQL_DATABASE=ruoyi-fastapi \
+  -e MYSQL_DATABASE=GY-EP_local \
   mysql:8.0 \
   --character-set-server=utf8mb4 \
   --collation-server=utf8mb4_unicode_ci
@@ -74,10 +74,10 @@ docker ps | grep mysql-ruoyi
 cd "/Users/liuwu/Desktop/BOQ Comparison/前端+后端python+后端java/gz-python-dev"
 
 # 导入SQL文件到Docker容器
-docker exec -i mysql-ruoyi mysql -uroot -pmysqlroot ruoyi-fastapi < sql/ruoyi-fastapi.sql
+docker exec -i mysql-ruoyi mysql -uroot -pmysqlroot GY-EP_local < sql/GY-EP_local.sql
 
 # 验证导入
-docker exec mysql-ruoyi mysql -uroot -pmysqlroot -e "USE \`ruoyi-fastapi\`; SHOW TABLES;"
+docker exec mysql-ruoyi mysql -uroot -pmysqlroot -e "USE \`GY-EP_local\`; SHOW TABLES;"
 ```
 
 ### Docker常用命令
@@ -113,14 +113,14 @@ brew install postgresql@14
 brew services start postgresql@14
 
 # 3. 创建数据库
-createdb ruoyi-fastapi
+createdb GY-EP_local
 
 # 4. 修改配置文件 .env.dev
 # 将 DB_TYPE=mysql 改为 DB_TYPE=postgresql
 # 将 DB_PORT=3306 改为 DB_PORT=5432
 
 # 5. 导入PostgreSQL版本的SQL
-psql ruoyi-fastapi < sql/ruoyi-fastapi-pg.sql
+psql GY-EP_local < sql/GY-EP_local-pg.sql
 ```
 
 ---
@@ -144,7 +144,7 @@ else
       --name mysql-ruoyi \
       -p 3306:3306 \
       -e MYSQL_ROOT_PASSWORD=mysqlroot \
-      -e MYSQL_DATABASE=ruoyi-fastapi \
+      -e MYSQL_DATABASE=GY-EP_local \
       mysql:8.0 \
       --character-set-server=utf8mb4 \
       --collation-server=utf8mb4_unicode_ci
@@ -159,7 +159,7 @@ if docker ps | grep -q mysql-ruoyi; then
     
     # 导入SQL
     echo "正在导入SQL文件..."
-    docker exec -i mysql-ruoyi mysql -uroot -pmysqlroot ruoyi-fastapi < sql/ruoyi-fastapi.sql
+    docker exec -i mysql-ruoyi mysql -uroot -pmysqlroot GY-EP_local < sql/GY-EP_local.sql
     
     echo "✓ 数据库初始化完成!"
     echo ""
@@ -168,7 +168,7 @@ if docker ps | grep -q mysql-ruoyi; then
     echo "  端口: 3306"
     echo "  用户: root"
     echo "  密码: mysqlroot"
-    echo "  数据库: ruoyi-fastapi"
+    echo "  数据库: GY-EP_local"
 else
     echo "✗ MySQL容器启动失败"
     exit 1

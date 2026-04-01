@@ -81,7 +81,8 @@ export function pageSpecModel(query) {
     return request({
         url: '/material/standard/specModel/page',
         method: 'post',
-        data: query
+        data: query,
+        headers: { repeatSubmit: false }
     }).then(unwrap)
 }
 
@@ -89,7 +90,8 @@ export function getSpecModelById(id) {
     return request({
         url: '/material/standard/specModel/getById',
         method: 'post',
-        data: { id }
+        data: { id },
+        headers: { repeatSubmit: false }
     }).then(unwrap)
 }
 
@@ -194,5 +196,42 @@ export function syncMaterialKnowledge() {
     return request({
         url: '/material/standard/knowledge/sync',
         method: 'post'
+    }).then(unwrap)
+}
+
+/**
+ * 标准化复核
+ */
+export function pageStandardReview(query) {
+    return request({
+        url: '/material/standard/review/page',
+        method: 'post',
+        data: query,
+        headers: { repeatSubmit: false }
+    }).then(unwrap)
+}
+
+export function getStandardReviewById(id) {
+    return request({
+        url: '/material/standard/review/getById',
+        method: 'post',
+        data: { id },
+        headers: { repeatSubmit: false }
+    }).then(unwrap)
+}
+
+export function updateStandardReview(data) {
+    return request({
+        url: '/material/standard/review/update',
+        method: 'post',
+        data
+    }).then(unwrap)
+}
+
+export function deleteStandardReview(id) {
+    return request({
+        url: '/material/standard/review/delete',
+        method: 'post',
+        data: { id }
     }).then(unwrap)
 }

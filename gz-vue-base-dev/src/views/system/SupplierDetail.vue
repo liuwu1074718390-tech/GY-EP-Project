@@ -2,44 +2,15 @@
   <div class="workbench-container">
     <div class="background-overlay"></div>
     <div class="workbench-layout">
-      <!-- 左侧菜单卡片 -->
-      <aside class="sidebar-glass">
-        <div class="logo-container">
-          <div class="logo-box">
-            <img src="@/assets/images/user-logo.png" alt="Logo" />
-          </div>
-          <h1 class="app-name">广业环保</h1>
-        </div>
-        <nav class="side-menu">
-          <div 
-            v-for="item in menuItems" 
-            :key="item.name" 
-            :class="['menu-item', { active: activeMenu === item.name }]"
-            @click="handleMenuClick(item)"
-          >
-            <el-icon><component :is="item.icon" /></el-icon>
-            <span class="menu-text">{{ item.label }}</span>
-          </div>
-        </nav>
-        <div class="sidebar-footer">
-          <div class="user-avatar-section">
-            <img src="@/assets/images/touxiang.png" class="user-avatar" alt="User" />
-            <span class="user-name-text">张三</span>
-          </div>
-          <div class="footer-actions">
-            <el-tooltip content="个人中心" placement="top">
-              <div class="action-item" @click="goUserCenter">
-                <el-icon><User /></el-icon>
-              </div>
-            </el-tooltip>
-            <el-tooltip content="退出登录" placement="top">
-              <div class="action-item" @click="handleLogout">
-                <el-icon><SwitchButton /></el-icon>
-              </div>
-            </el-tooltip>
-          </div>
-        </div>
-      </aside>
+      <WorkbenchSidebar
+        :menu-items="menuItems"
+        active-menu="供应商查询"
+        :user-name="userStore.nickName"
+        :user-avatar="userStore.avatar"
+        @menu-click="handleSidebarMenuClick"
+        @user-center="goUserCenter"
+        @logout="handleLogout"
+      />
 
       <!-- 右侧主内容区 -->
       <main class="main-content">
@@ -325,6 +296,7 @@
         </div>
       </template>
     </el-dialog>
+    <UserProfileModal ref="userProfileRef" />
   </div>
 </template>
 
@@ -332,33 +304,38 @@
 import { ref, onMounted, computed, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
-  OfficeBuilding, Document, Plus, List, Memo, Edit, Search,
-  DataAnalysis, PriceTag, UserFilled, Postcard,
-  HomeFilled, User, SwitchButton, CaretTop, CaretBottom,
+  OfficeBuilding, Document, List, Memo, Search,
   InfoFilled, PhoneFilled, DataLine, Collection
 } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { getCategoryTree } from '@/api/material'
 import { getBrandList, getRegionTree, updateSupplier } from '@/api/supplier'
+import useUserStore from '@/store/modules/user'
+import WorkbenchSidebar from '@/views/dashboard/components/WorkbenchSidebar.vue'
+import UserProfileModal from '@/views/dashboard/UserProfileModal.vue'
 
 const route = useRoute()
 const router = useRouter()
-const activeMenu = ref('供应商查询')
+const userStore = useUserStore()
+const userProfileRef = ref(null)
 const menuItems = [
-  { name: '驾驶舱', label: '驾驶舱', icon: 'DataAnalysis', path: '/workbench?tab=驾驶舱' },
-  { name: '材价查询', label: '材价查询', icon: 'Search', path: '/workbench?tab=材价查询' },
-  { name: '智能组价', label: '智能组价', icon: 'PriceTag', path: '/workbench?tab=智能组价' },
-  { name: '采购比价', label: '采购比价', icon: 'DataLine', path: '/workbench?tab=采购比价' },
-  { name: '供应商查询', label: '供应商查询', icon: 'OfficeBuilding', path: '/workbench?tab=供应商查询' },
-  { name: '材料标准', label: '材料标准', icon: 'Collection', path: '/workbench?tab=材料标准' }
+  { name: '驾驶舱', label: '驾驶舱', icon: 'DataAnalysis' },
+  { name: '材价查询', label: '材价查询', icon: 'Search' },
+  { name: '智能组价', label: '智能组价', icon: 'PriceTag' },
+  { name: '采购比价', label: '采购比价', icon: 'DataLine' },
+  { name: '供应商查询', label: '供应商查询', icon: 'OfficeBuilding' },
+  { name: '材料标准', label: '材料标准', icon: 'Collection' }
 ]
 
-const handleMenuClick = (item) => router.push(item.path)
-const goHome = () => router.push('/index')
-const goUserCenter = () => router.push('/user/profile')
+const handleSidebarMenuClick = (menuName) => router.push({ path: '/workbench', query: { tab: menuName } })
+const goUserCenter = () => userProfileRef.value?.open()
 const handleLogout = () => {
-    ElMessageBox.confirm('确定注销并退出系统吗？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
-    .then(() => { location.href = '/' })
+    ElMessageBox.confirm('确定注销并退出系统吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    .then(() => userStore.logOut().then(() => { location.href = '/' }))
     .catch(() => {})
 }
 
@@ -556,101 +533,6 @@ $text-sub: #86868b;
 }
 
 .workbench-layout { position: relative; z-index: 1; display: flex; gap: 20px; width: 100%; height: 100%; max-width: 1440px; }
-
-.sidebar-glass {
-  width: 200px;
-  height: 100%;
-  background: $glass-bg;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid $glass-border;
-  border-radius: 30px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 32px 0 4px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-  .logo-container { flex-shrink: 0; margin-bottom: 32px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 16px;
-    .logo-box { width: 72px; height: 72px; background: white; border-radius: 18px; padding: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(55, 124, 253, 0.15); img { width: 100%; height: 100%; object-fit: contain; } }
-    .app-name { font-size: 16px; font-weight: 700; color: #1d1d1f; letter-spacing: 1px; margin: 0; text-align: center; }
-  }
-  .side-menu { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; width: 100%; padding: 0 12px; &::-webkit-scrollbar { width: 0; height: 0; }
-    .menu-item { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px 2px 5px; border-radius: 16px; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); color: $text-sub;
-      .el-icon { font-size: 24px; margin-bottom: 4px; transition: transform 0.3s; }
-      .menu-text { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; }
-      &:hover { background: rgba(255,255,255,0.8); color: $primary-blue; .el-icon { transform: scale(1.1); } }
-      &.active { background: linear-gradient(135deg, $primary-blue 0%, #5c7cfa 100%); color: white; box-shadow: 0 8px 20px rgba($primary-blue, 0.3); transform: translateY(-2px); }
-    }
-  }
-  .sidebar-footer {
-    flex-shrink: 0;
-    margin-top: auto;
-    width: 100%;
-    padding: 20px 16px;
-    border-top: 1px solid rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    
-    .user-avatar-section {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      flex: 1;
-      min-width: 0;
-      
-      .user-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transition: transform 0.3s;
-        flex-shrink: 0;
-        &:hover { transform: scale(1.05); }
-      }
-      
-      .user-name-text {
-        font-size: 14px;
-        font-weight: 600;
-        color: #333;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 80px;
-      }
-    }
-
-    .footer-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-      
-      .action-item {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: $text-sub;
-        cursor: pointer;
-        transition: all 0.2s;
-        
-        &:hover {
-          background: white;
-          color: $primary-blue;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-          transform: translateY(-2px);
-        }
-        
-        .el-icon { font-size: 18px; }
-      }
-    }
-  }
-}
 
 .main-content { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .detail-wrapper { flex: 1; overflow-y: auto; padding-right: 8px; &::-webkit-scrollbar { width: 4px; } &::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.05); border-radius: 10px; } }

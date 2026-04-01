@@ -26,6 +26,7 @@ from module_admin.controller.role_controller import role_controller
 from module_admin.controller.server_controller import server_controller
 from module_admin.controller.user_controller import user_controller
 from module_generator.controller.gen_controller import gen_controller
+from module_material.controller.material_price_controller import material_price_controller
 from module_material.controller.material_standard_controller import material_knowledge_controller, material_standard_controller
 from sub_applications.handle import handle_sub_applications
 from utils.common_util import worship
@@ -84,6 +85,7 @@ controller_list = [
     {'router': common_controller, 'tags': ['通用模块']},
     {'router': gen_controller, 'tags': ['代码生成']},
     {'router': material_standard_controller, 'tags': ['材料标准管理']},
+    {'router': material_price_controller, 'tags': ['材价记录管理']},
     {'router': material_knowledge_controller, 'tags': ['材料知识库']},
 ]
 

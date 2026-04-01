@@ -41,6 +41,14 @@
           />
         </div>
 
+        <div
+          class="all-category-option"
+          :class="{ active: selectedCategoryKey === ALL_CATEGORY_KEY }"
+          @click="handleSelectAllCategory"
+        >
+          全部分类
+        </div>
+
         <el-tree
           ref="categoryTreeRef"
           :data="filteredCategoryTree"
@@ -48,6 +56,7 @@
           :indent="12"
           node-key="id"
           highlight-current
+          :expand-on-click-node="false"
           @node-click="handleCategorySelect"
           :default-expand-all="true"
           :filter-node-method="filterNode"
@@ -55,7 +64,7 @@
           <template #default="{ node, data }">
             <div class="custom-tree-node">
               <span class="node-prefix">{{ formatDisplayCategoryCode(node, data) }}</span>
-              <span class="node-label">{{ node.label }}</span>
+              <span v-overflow-title="node.label" class="node-label">{{ node.label }}</span>
             </div>
           </template>
         </el-tree>
@@ -83,22 +92,31 @@
               class="filter-input"
               clearable 
             />
-            <el-date-picker
-              v-model="filterForm.purchaseTime"
-              type="month"
-              placeholder="采购月份"
-              format="YYYY-MM"
-              value-format="YYYY-MM"
-              class="filter-date"
-              style="width: 150px"
-              clearable
-            />
           </div>
 
           <!-- 操作按钮组 -->
           <div class="action-group">
-            <el-button type="primary" @click="handleQuery">查询</el-button>
-            <el-button @click="handleReset">重置</el-button>
+            <el-button class="btn-query-shift" type="primary" @click="handleQuery(true)">查询</el-button>
+            <el-button class="btn-reset-shift" @click="handleReset">重置</el-button>
+            <div class="data-view-switch-pill">
+              <button
+                type="button"
+                class="switch-item"
+                :class="{ active: filterForm.dataViewMode === 'NON_STANDARD' }"
+                @click="setDataViewMode('NON_STANDARD')"
+              >
+                非标准
+              </button>
+              <span class="switch-divider" />
+              <button
+                type="button"
+                class="switch-item"
+                :class="{ active: filterForm.dataViewMode === 'STANDARD' }"
+                @click="setDataViewMode('STANDARD')"
+              >
+                标准
+              </button>
+            </div>
             <el-button 
               type="success" 
               icon="Plus" 
@@ -121,6 +139,15 @@
         <!-- 高级筛选（折叠） -->
         <el-collapse-transition>
           <div v-show="showAdvanced" class="filter-row-secondary">
+            <el-date-picker
+              v-model="filterForm.purchaseTime"
+              type="month"
+              placeholder="采购月份"
+              format="YYYY-MM"
+              value-format="YYYY-MM"
+              class="filter-item-small"
+              clearable
+            />
             <el-select v-model="filterForm.categoryName" placeholder="材料分类" clearable filterable class="filter-item-medium">
               <el-option v-for="item in uniqueValues.categories" :key="item" :label="item" :value="item" />
             </el-select>
@@ -161,7 +188,7 @@
     <!-- 数据表格 -->
     <section class="table-section glass-card">
       <el-table 
-        :data="paginatedData" 
+        :data="filteredData" 
         stripe
         border
         style="width: 100%;"
@@ -173,19 +200,19 @@
         <el-table-column label="材料基础信息" width="315" fixed="left">
           <template #default="{ row }">
             <div class="material-info-cell">
-              <div class="material-name link-text" @click="handleMaterialDetail(row)">{{ row.materialName }}</div>
-              <el-tooltip effect="dark" :content="row.specification" placement="top-start" :show-after="300">
-                <div class="material-spec">{{ row.specification }}</div>
+              <div class="material-name link-text" @click="handleMaterialDetail(row)">{{ getDisplayMaterialName(row) }}</div>
+              <el-tooltip effect="dark" :content="getDisplaySpecification(row)" placement="top-start" :show-after="300">
+                <div class="material-spec">{{ getDisplaySpecification(row) }}</div>
               </el-tooltip>
               <div class="material-tags">
                 <span class="tag-item tag-category">
-                  <el-icon><PriceTag /></el-icon>{{ row.categoryName }}
+                  <el-icon><PriceTag /></el-icon>{{ getDisplayCategoryName(row) }}
                 </span>
-                <span class="tag-item tag-brand">
-                  <el-icon><Medal /></el-icon>{{ row.brand }}
+                <span class="tag-item tag-brand" :title="getDisplayBrandName(row)">
+                  <el-icon><Medal /></el-icon>{{ getDisplayBrandName(row) }}
                 </span>
                 <span class="tag-item tag-unit">
-                  <el-icon><Box /></el-icon>{{ row.unit }}
+                  <el-icon><Box /></el-icon>{{ getDisplayUnitName(row) }}
                 </span>
               </div>
             </div>
@@ -199,15 +226,13 @@
               <div class="price-row">
                 <div class="price-main">
                   <span class="price-label">不含税：</span>
-                  <span class="price-value">
-                    ¥{{ row.priceExcludingTax.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                  </span>
+                  <span class="price-value">{{ formatPriceDisplay(getDisplayPriceExcludingTax(row)) }}</span>
                 </div>
-                <div v-if="row.rangeExcl" class="price-range-inline" @click="handleMaterialDetail(row)">
-                  <el-tooltip :content="'当前价格较区间：' + getPriceStatusHelper(row.priceExcludingTax, row.rangeExcl).label" placement="top" :show-after="1000">
-                    <div class="status-icon-wrapper" :class="getPriceStatusHelper(row.priceExcludingTax, row.rangeExcl).class">
-                      <el-icon class="status-icon" :style="{ color: getPriceStatusHelper(row.priceExcludingTax, row.rangeExcl).color }">
-                        <component :is="getPriceStatusHelper(row.priceExcludingTax, row.rangeExcl).icon" />
+                <div v-if="isValidPriceRange(row.rangeExcl)" class="price-range-inline" @click="handleMaterialDetail(row)">
+                  <el-tooltip :content="'当前价格较区间：' + getPriceStatusHelper(getDisplayPriceExcludingTax(row), row.rangeExcl).label" placement="top" :show-after="1000">
+                    <div class="status-icon-wrapper" :class="getPriceStatusHelper(getDisplayPriceExcludingTax(row), row.rangeExcl).class">
+                      <el-icon class="status-icon" :style="{ color: getPriceStatusHelper(getDisplayPriceExcludingTax(row), row.rangeExcl).color }">
+                        <component :is="getPriceStatusHelper(getDisplayPriceExcludingTax(row), row.rangeExcl).icon" />
                       </el-icon>
                       <span class="range-value">¥{{ row.rangeExcl[0].toLocaleString() }} ~ ¥{{ row.rangeExcl[1].toLocaleString() }}</span>
                     </div>
@@ -217,15 +242,13 @@
               <div class="price-row">
                 <div class="price-main">
                   <span class="price-label">含税：</span>
-                  <span class="price-value">
-                    ¥{{ row.priceIncludingTax.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                  </span>
+                  <span class="price-value">{{ formatPriceDisplay(getDisplayPriceIncludingTax(row)) }}</span>
                 </div>
-                <div v-if="row.rangeIncl" class="price-range-inline" @click="handleMaterialDetail(row)">
-                  <el-tooltip :content="'当前价格较区间：' + getPriceStatusHelper(row.priceIncludingTax, row.rangeIncl).label" placement="top" :show-after="1000">
-                    <div class="status-icon-wrapper" :class="getPriceStatusHelper(row.priceIncludingTax, row.rangeIncl).class">
-                      <el-icon class="status-icon" :style="{ color: getPriceStatusHelper(row.priceIncludingTax, row.rangeIncl).color }">
-                        <component :is="getPriceStatusHelper(row.priceIncludingTax, row.rangeIncl).icon" />
+                <div v-if="isValidPriceRange(row.rangeIncl)" class="price-range-inline" @click="handleMaterialDetail(row)">
+                  <el-tooltip :content="'当前价格较区间：' + getPriceStatusHelper(getDisplayPriceIncludingTax(row), row.rangeIncl).label" placement="top" :show-after="1000">
+                    <div class="status-icon-wrapper" :class="getPriceStatusHelper(getDisplayPriceIncludingTax(row), row.rangeIncl).class">
+                      <el-icon class="status-icon" :style="{ color: getPriceStatusHelper(getDisplayPriceIncludingTax(row), row.rangeIncl).color }">
+                        <component :is="getPriceStatusHelper(getDisplayPriceIncludingTax(row), row.rangeIncl).icon" />
                       </el-icon>
                       <span class="range-value">¥{{ row.rangeIncl[0].toLocaleString() }} ~ ¥{{ row.rangeIncl[1].toLocaleString() }}</span>
                     </div>
@@ -233,9 +256,9 @@
                 </div>
               </div>
               <div class="price-meta">
-                <span>税率：{{ row.taxRate }}%</span>
+                <span>税率：{{ formatTaxRateDisplay(row.taxRate) }}</span>
                 <span class="meta-separator">|</span>
-                <span>数量：{{ row.quantity }}</span>
+                <span>数量：{{ formatQuantityDisplay(row.quantity) }}</span>
               </div>
             </div>
           </template>
@@ -295,7 +318,7 @@
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :page-sizes="[20, 50, 100]"
-          :total="filteredData.length"
+          :total="totalCount"
           layout="total, sizes, prev, pager, next, jumper"
           background
           size="small"
@@ -484,9 +507,11 @@
         <el-table-column prop="categoryName" label="分类" width="120" />
         <el-table-column prop="unit" label="单位" width="70" align="center" />
         <el-table-column prop="brand" label="品牌" width="100" />
-        <el-table-column prop="priceExcludingTax" label="不含税价" width="100" align="right" />
+        <el-table-column prop="priceExcludingTax" label="不含税价" width="100" align="right">
+          <template #default="{ row }">{{ formatPriceDisplay(row.priceExcludingTax) }}</template>
+        </el-table-column>
         <el-table-column prop="taxRate" label="税率" width="70" align="center">
-          <template #default="{ row }">{{ row.taxRate }}%</template>
+          <template #default="{ row }">{{ formatTaxRateDisplay(row.taxRate) }}</template>
         </el-table-column>
         <el-table-column prop="supplierCompany" label="供应商" min-width="150" show-overflow-tooltip />
         <el-table-column label="操作" width="80" align="center" fixed="right">
@@ -505,17 +530,19 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch, onMounted } from 'vue'
+import { ref, computed, reactive, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Filter, Search, Refresh, ArrowUp, ArrowDown, EditPen, Delete, Plus, InfoFilled, Money, OfficeBuilding, Collection, Download, FolderOpened, Expand, Fold, TrendCharts, Document, Calendar, CaretTop, CaretBottom, Minus, PriceTag, Medal, Box } from '@element-plus/icons-vue'
-import { materialPriceData, uniqueValues } from './mockMaterialData'
+import { uniqueValues } from './mockMaterialData'
 import { materialDataStore } from '@/store/materialDataStore'
 import { pageSupplierList } from '@/api/supplier'
 import { getCategoryTree } from '@/api/material'
+import { pageMaterialPrice, updateMaterialPrice, deleteMaterialPrice } from '@/api/materialPrice'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as XLSX from 'xlsx'
 import { stashStore } from '@/store/stashStore'
 import StashFloatBall from '@/components/GzComponents/StashFloatBall/index.vue'
+import { createEmptyMaterialPriceForm, materialPriceFormRules } from './materialPriceSchema'
 
 const router = useRouter()
 
@@ -553,9 +580,52 @@ const getPriceStatusHelper = (price, range) => {
   }
 }
 
+const isEmptyOrZeroValue = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return true
+  }
+  const numericValue = Number(value)
+  return Number.isNaN(numericValue) || numericValue === 0
+}
+
+const isValidPriceRange = (range) => {
+  if (!Array.isArray(range) || range.length < 2) {
+    return false
+  }
+  const min = Number(range[0])
+  const max = Number(range[1])
+  if (Number.isNaN(min) || Number.isNaN(max)) {
+    return false
+  }
+  // 区间两端都需要是有效正数，避免展示“¥0 ~ ¥0”等无效内容
+  return min > 0 && max > 0 && max >= min
+}
+
+const formatPriceDisplay = (value) => {
+  if (isEmptyOrZeroValue(value)) {
+    return '-'
+  }
+  return `¥${Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+const formatTaxRateDisplay = (value) => {
+  if (isEmptyOrZeroValue(value)) {
+    return '-'
+  }
+  return `${Number(value)}%`
+}
+
+const formatQuantityDisplay = (value) => {
+  if (isEmptyOrZeroValue(value)) {
+    return '-'
+  }
+  return `${value}`
+}
+
 onMounted(() => {
   loadSuppliers()
   loadCategoryTree()
+  handleQuery(true)
 })
 
 // --- 侧边栏逻辑 ---
@@ -565,12 +635,15 @@ const categoryTree = ref([])
 const filteredCategoryTree = ref([])
 const categorySearchText = ref('')
 const isExpandAll = ref(true)
+const ALL_CATEGORY_KEY = 'ALL'
+const selectedCategoryKey = ref(ALL_CATEGORY_KEY)
 
 // 加载分类树
 const loadCategoryTree = async () => {
   const res = await getCategoryTree()
   categoryTree.value = res.data || res || []
   filteredCategoryTree.value = categoryTree.value
+  handleSelectAllCategory(false)
 }
 
 const toggleSidebar = () => {
@@ -616,8 +689,38 @@ const formatDisplayCategoryCode = (node, data) => {
   return mergedCode.startsWith('26') ? mergedCode : `26${mergedCode}`
 }
 
+const setOverflowTitle = (el, text) => {
+  const value = text == null ? '' : String(text)
+  if (el.scrollWidth > el.clientWidth) {
+    el.setAttribute('title', value)
+  } else {
+    el.removeAttribute('title')
+  }
+}
+
+const vOverflowTitle = {
+  mounted(el, binding) {
+    const handler = () => setOverflowTitle(el, binding.value)
+    el.__overflowTitleHandler__ = handler
+    el.addEventListener('mouseenter', handler)
+    window.addEventListener('resize', handler)
+    requestAnimationFrame(handler)
+  },
+  updated(el, binding) {
+    setOverflowTitle(el, binding.value)
+  },
+  unmounted(el) {
+    const handler = el.__overflowTitleHandler__
+    if (!handler) return
+    el.removeEventListener('mouseenter', handler)
+    window.removeEventListener('resize', handler)
+    delete el.__overflowTitleHandler__
+  }
+}
+
 // 分类点击联动
 const handleCategorySelect = (data) => {
+  selectedCategoryKey.value = data.id
   // 递归获取当前节点及其所有子节点的名称
   const getAllCategoryNames = (node, names = []) => {
     if (node.categoryName) {
@@ -630,9 +733,24 @@ const handleCategorySelect = (data) => {
   }
 
   const allNames = getAllCategoryNames(data)
-  // 设置分类名称筛选（支持数组以便 Mock 数据中的 filterMaterialData 处理）
-  filterForm.value.categoryName = allNames.length > 1 ? allNames : data.categoryName
-  handleQuery()
+  // 服务端模式使用单值过滤，本地回退模式继续支持数组
+  if (useServerData.value) {
+    filterForm.value.categoryName = data.categoryName
+  } else {
+    filterForm.value.categoryName = allNames.length > 1 ? allNames : data.categoryName
+  }
+  handleQuery(true)
+}
+
+const handleSelectAllCategory = (withQuery = true) => {
+  selectedCategoryKey.value = ALL_CATEGORY_KEY
+  filterForm.value.categoryName = ''
+  nextTick(() => {
+    categoryTreeRef.value?.setCurrentKey(null)
+  })
+  if (withQuery) {
+    handleQuery(true)
+  }
 }
 
 // 筛选表单
@@ -646,7 +764,8 @@ const filterForm = ref({
   unit: '',
   taxRate: null,
   supplierCompany: '',
-  categoryName: ''
+  categoryName: '',
+  dataViewMode: 'NON_STANDARD'
 })
 
 // 高级筛选展开状态
@@ -655,25 +774,88 @@ const showAdvanced = ref(false)
 // 分页
 const currentPage = ref(1)
 const pageSize = ref(20)
+const totalCount = ref(0)
+const useServerData = ref(true)
 
-// 筛选后的数据（已包含后端计算的价格区间）
-const filteredData = ref([...materialDataStore.allMaterials])
+// 当前页数据
+const filteredData = ref([])
+const isStandardMode = computed(() => filterForm.value.dataViewMode === 'STANDARD')
 
-// 分页后的数据
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredData.value.slice(start, end)
-})
+const getDisplayMaterialName = (row) => {
+  if (!isStandardMode.value) return row.materialName || '-'
+  return row.standardStdName || '-'
+}
+
+const getDisplaySpecification = (row) => {
+  if (!isStandardMode.value) return row.specification || '-'
+  return row.standardSpecSummary || '-'
+}
+
+const getDisplayUnitName = (row) => {
+  if (!isStandardMode.value) return row.unit || '-'
+  return row.standardUnitName || '-'
+}
+
+const getDisplayCategoryName = (row) => {
+  if (!isStandardMode.value) return row.categoryName || '-'
+  return row.standardCategoryLevel3Name || '-'
+}
+
+const getDisplayBrandName = (row) => row.brand || '-'
+
+const getDisplayPriceExcludingTax = (row) => {
+  if (!isStandardMode.value) return row.priceExcludingTax
+  return row.normalizedPriceExcludingTax ?? row.priceExcludingTax
+}
+
+const getDisplayPriceIncludingTax = (row) => {
+  if (!isStandardMode.value) return row.priceIncludingTax
+  return row.normalizedPriceIncludingTax ?? row.priceIncludingTax
+}
 
 // 查询
-const handleQuery = () => {
-  filteredData.value = materialDataStore.filter(filterForm.value)
-  currentPage.value = 1 // 重置到第一页
+const handleQuery = async (resetPage = false) => {
+  if (resetPage) {
+    currentPage.value = 1
+  }
+  if (useServerData.value) {
+    try {
+      const res = await pageMaterialPrice({
+        pageNum: currentPage.value,
+        pageSize: pageSize.value,
+        ...filterForm.value
+      })
+      filteredData.value = res.records || []
+      totalCount.value = Number(res.total || 0)
+      return
+    } catch (error) {
+      useServerData.value = false
+      ElMessage.warning('材价服务暂不可用，已切换本地演示数据')
+    }
+  }
+
+  const local = materialDataStore.filter(filterForm.value)
+  totalCount.value = local.length
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  filteredData.value = local.slice(start, end)
+}
+
+const handleDataViewModeChange = () => {
+  // 避免此前服务端短暂异常后一直停留在本地回退数据
+  useServerData.value = true
+  handleQuery(true)
+}
+
+const setDataViewMode = (mode) => {
+  if (filterForm.value.dataViewMode === mode) return
+  filterForm.value.dataViewMode = mode
+  handleDataViewModeChange()
 }
 
 // 重置
-const handleReset = () => {
+const handleReset = async () => {
+  const currentDataViewMode = filterForm.value.dataViewMode || 'NON_STANDARD'
   filterForm.value = {
     materialName: '',
     specification: '',
@@ -684,10 +866,11 @@ const handleReset = () => {
     unit: '',
     taxRate: null,
     supplierCompany: '',
-    categoryName: ''
+    categoryName: '',
+    dataViewMode: currentDataViewMode
   }
-  filteredData.value = [...materialDataStore.allMaterials]
-  currentPage.value = 1
+  handleSelectAllCategory(false)
+  await handleQuery(true)
 }
 
 // 跳转到供应商详情
@@ -712,7 +895,8 @@ const handleMaterialDetail = (row) => {
         tab: '材价详情',
         id: row.id,
         name: row.materialName,
-        spec: row.specification
+        spec: row.specification,
+        dataViewMode: filterForm.value.dataViewMode || 'NON_STANDARD'
     }
   })
   window.open(href, '_blank')
@@ -728,30 +912,10 @@ const editingRow = ref(null)
 
 const formData = reactive({
   id: null,
-  materialName: '',
-  specification: '',
-  categoryName: '',
-  unit: '',
-  brand: '',
-  quantity: 1,
-  priceExcludingTax: 0,
-  taxRate: 13,
-  priceIncludingTax: 0,
-  sourceProject: '',
-  purchaseTime: '',
-  priceType: '',
-  supplierCompany: ''
+  ...createEmptyMaterialPriceForm()
 })
 
-const formRules = {
-  materialName: [{ required: true, message: '请输入材料名称', trigger: 'blur' }],
-  specification: [{ required: true, message: '请输入规格型号', trigger: 'blur' }],
-  categoryName: [{ required: true, message: '请选择或输入分类', trigger: 'change' }],
-  unit: [{ required: true, message: '请选择或输入单位', trigger: 'change' }],
-  priceExcludingTax: [{ required: true, message: '请输入不含税价', trigger: 'blur' }],
-  taxRate: [{ required: true, message: '请选择税率', trigger: 'change' }],
-  priceIncludingTax: [{ required: true, message: '请输入含税价', trigger: 'blur' }]
-}
+const formRules = materialPriceFormRules
 
 // 自动计算逻辑：
 // 若修改了不含税价或税率，自动计算含税价：含税价 = 不含税价 * (1 + 税率/100)
@@ -764,22 +928,7 @@ watch(() => [formData.priceExcludingTax, formData.taxRate], ([p, t]) => {
 })
 
 const handleAdd = () => {
-  dialogTitle.value = '新增材价'
-  dialogVisible.value = true
-  editingRow.value = null
-  
-  // 重置表单
-  Object.keys(formData).forEach(key => {
-    if (key === 'taxRate') formData[key] = 13
-    else if (key === 'quantity') formData[key] = 1
-    else if (key === 'priceExcludingTax' || key === 'priceIncludingTax') formData[key] = 0
-    else formData[key] = ''
-  })
-  formData.id = null
-  
-  // 默认日期
-  const now = new Date()
-  formData.purchaseTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  router.push({ path: '/workbench', query: { tab: '新增材价' } })
 }
 
 const handleEdit = (row) => {
@@ -800,14 +949,15 @@ const handleDelete = (row) => {
     }
   )
     .then(() => {
-      // 从 store 中删除
+      if (useServerData.value) {
+        return deleteMaterialPrice(row.id).then(() => {
+          handleQuery()
+          ElMessage({ type: 'success', message: '删除成功' })
+        })
+      }
       materialDataStore.remove(row)
-      // 重新执行查询以更新列表
       handleQuery()
-      ElMessage({
-        type: 'success',
-        message: '删除成功',
-      })
+      ElMessage({ type: 'success', message: '删除成功' })
     })
     .catch(() => {
     })
@@ -828,18 +978,26 @@ const handleSubmit = async () => {
         supplierOptions.value.push(formData.supplierCompany)
       }
 
+      if (useServerData.value) {
+        if (!editingRow.value) {
+          ElMessage.warning('请使用“新增材价”页面进行新增')
+          return
+        }
+        updateMaterialPrice({ ...formData, id: editingRow.value.id }).then(() => {
+          ElMessage.success('更新成功')
+          handleQuery()
+          dialogVisible.value = false
+        })
+        return
+      }
+
       if (!editingRow.value) {
-        // 新增
         materialDataStore.add({ ...formData })
         ElMessage.success('新增成功')
       } else {
-        // 编辑：更新
-        // 注意：store.update 需要 ID
         materialDataStore.update({ ...formData })
         ElMessage.success('更新成功')
       }
-      
-      // 重新执行查询以更新列表
       handleQuery()
       dialogVisible.value = false
     }
@@ -915,6 +1073,10 @@ const exportStash = () => {
   
   ElMessage.success('导出成功')
 }
+
+watch([currentPage, pageSize], () => {
+  handleQuery()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -1068,6 +1230,31 @@ $text-main: #1d1d1f;
       margin-bottom: 12px;
       padding: 0;
     }
+
+    .all-category-option {
+      height: 34px;
+      line-height: 34px;
+      margin-bottom: 8px;
+      padding: 0 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #606266;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(55, 124, 253, 0.08);
+        color: #377cfd;
+      }
+
+      &.active {
+        background: rgba(55, 124, 253, 0.12);
+        color: #377cfd;
+        font-weight: 600;
+      }
+    }
   }
 }
 
@@ -1163,11 +1350,55 @@ $text-main: #1d1d1f;
             align-items: center;
             gap: 10px;
             margin-left: auto;
+
+            .data-view-switch-pill {
+              display: inline-flex;
+              align-items: center;
+              height: 32px;
+              padding: 0 6px;
+              border-radius: 6px;
+              border: 1px solid #d9e2f2;
+              background: #f4f7fc;
+
+              .switch-item {
+                height: 24px;
+                min-width: 74px;
+                padding: 0 12px;
+                border: none;
+                border-radius: 4px;
+                background: transparent;
+                color: #5f6b7a;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &.active {
+                  color: #1f6feb;
+                  background: #e8f1ff;
+                  font-weight: 600;
+                }
+              }
+
+              .switch-divider {
+                width: 1px;
+                height: 16px;
+                margin: 0 6px;
+                background: #d9e2f2;
+              }
+            }
             
             .el-button {
               font-size: 13px;
               padding: 8px 16px;
               height: 32px;
+            }
+
+            :deep(.btn-reset-shift) {
+              transform: translateX(-10px);
+            }
+
+            :deep(.btn-query-shift) {
+              transform: translateX(-5px);
             }
 
             .toggle-btn {
@@ -1320,6 +1551,7 @@ $text-main: #1d1d1f;
           color: #67c23a;
           border-color: rgba(103, 194, 58, 0.15);
         }
+
       }
     }
   }

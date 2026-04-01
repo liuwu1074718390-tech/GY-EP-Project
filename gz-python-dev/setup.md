@@ -1,6 +1,6 @@
 # 进入后端目录
 
-cd ruoyi-fastapi-backend
+cd gz-python-dev
 
 # 如果使用的是 MySQL 数据库，请执行以下命令安装项目依赖环境
 
@@ -16,7 +16,7 @@ pip3 install -r requirements-pg.txt
 
 # 运行 sql 文件
 
-1.新建数据库 ruoyi-fastapi(默认，可修改) 2.如果使用的是 MySQL 数据库，使用命令或数据库连接工具运行 sql 文件夹下的 ruoyi-fastapi.sql；如果使用的是 PostgreSQL 数据库，使用命令或数据库连接工具运行 sql 文件夹下的 ruoyi-fastapi-pg.sql
+1.新建数据库 GY-EP_local(默认，可修改) 2.如果使用的是 MySQL 数据库，使用命令或数据库连接工具运行 sql 文件夹下的 GY-EP_local.sql；如果使用的是 PostgreSQL 数据库，使用命令或数据库连接工具运行 sql 文件夹下的 GY-EP_local-pg.sql
 
 # 运行后端
 

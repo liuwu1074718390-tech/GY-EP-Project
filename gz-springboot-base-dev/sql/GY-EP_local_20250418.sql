@@ -5,7 +5,7 @@
  Source Server Type    : MySQL
  Source Server Version : 80032
  Source Host           : 192.168.1.247:3339
- Source Schema         : gz-db
+ Source Schema         : GY-EP_local
 
  Target Server Type    : MySQL
  Target Server Version : 80032

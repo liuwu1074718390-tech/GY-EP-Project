@@ -12,10 +12,17 @@ import pageWhitelist from '@/config/whitelist';
 
 NProgress.configure({ showSpinner: false });
 
+function resolvePageTitle(route) {
+	const tabTitle = typeof route.query?.tab === 'string' ? route.query.tab.trim() : '';
+	const metaTitle = typeof route.meta?.title === 'string' ? route.meta.title.trim() : '';
+	return tabTitle || metaTitle;
+}
+
 router.beforeEach((to, from, next) => {
 	NProgress.start();
 	if (getToken()) {
-		to.meta.title && useSettingsStore().setTitle(to.meta.title);
+		const pageTitle = resolvePageTitle(to);
+		pageTitle && useSettingsStore().setTitle(pageTitle);
 		/* has token*/
 		if (to.path === '/login') {
 			next({ path: '/' });

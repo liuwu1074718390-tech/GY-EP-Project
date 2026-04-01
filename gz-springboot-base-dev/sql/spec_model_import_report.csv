@@ -1,0 +1,8 @@
+severity,issue_type,standard_name,detail
+warning,empty_units,中心传动单管吸泥机主机(单侧吸泥管和单侧桁架,标准规格型号文件中未提取到标准单位
+warning,empty_units,其他费用(包括指导安装、调试及验收、人员培训、售后服务费、运费等,标准规格型号文件中未提取到标准单位
+warning,empty_units,其它除臭设备,标准规格型号文件中未提取到标准单位
+warning,empty_units,可提升式薄膜板式微孔曝气器,标准规格型号文件中未提取到标准单位
+warning,empty_units,电动碟阀,标准规格型号文件中未提取到标准单位
+warning,empty_units,铸铁镶铜速闭圆闸门,标准规格型号文件中未提取到标准单位
+warning,empty_units,附属设备,标准规格型号文件中未提取到标准单位

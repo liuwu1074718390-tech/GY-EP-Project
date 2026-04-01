@@ -49,6 +49,14 @@
           />
         </div>
 
+        <div
+          class="all-category-option"
+          :class="{ active: selectedCategoryKey === ALL_CATEGORY_KEY }"
+          @click="handleSelectAllCategory"
+        >
+          全部分类
+        </div>
+
         <el-tree
           ref="categoryTreeRef"
           :data="filteredCategoryTree"
@@ -56,6 +64,7 @@
           :indent="12"
           node-key="id"
           highlight-current
+          :expand-on-click-node="false"
           @node-click="handleCategorySelect"
           :default-expand-all="true"
           :filter-node-method="filterNode"
@@ -63,7 +72,7 @@
           <template #default="{ node, data }">
             <div class="custom-tree-node">
               <span class="node-prefix">{{ formatDisplayCategoryCode(node, data) }}</span>
-              <span class="node-label">{{ node.label }}</span>
+              <span v-overflow-title="node.label" class="node-label">{{ node.label }}</span>
             </div>
           </template>
         </el-tree>
@@ -78,6 +87,7 @@
             <el-tab-pane label="标准规格型号" name="standard_spec_model" />
             <el-tab-pane label="标准单位" name="standard_unit" />
             <el-tab-pane label="标准工艺段" name="standard_process_segment" />
+            <el-tab-pane label="标准化复核" name="standard_review" />
           </el-tabs>
           <el-button
             type="primary"
@@ -93,72 +103,55 @@
 
       <template v-if="activeTab === 'standard_material'">
         <section class="filter-panel-glass">
-          <el-form :model="queryForm" inline size="default" class="custom-query-form">
-            <div class="filter-inputs">
-              <el-form-item label="材料编码">
-                <el-input v-model="queryForm.materialCode" placeholder="输入编码" clearable style="width: 140px" />
-              </el-form-item>
-              <el-form-item label="材料名称">
-                <el-input v-model="queryForm.materialName" placeholder="输入材料名称" clearable style="width: 160px" />
-              </el-form-item>
-              <el-form-item label="规格">
-                <el-select v-model="queryForm.specId" placeholder="全部规格" clearable filterable style="width: 140px">
-                  <el-option v-for="item in specList" :key="item.id" :label="item.specName" :value="item.id" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="单位">
-                <el-select v-model="queryForm.unitId" placeholder="单位" clearable style="width: 90px">
-                  <el-option v-for="item in unitList" :key="item.id" :label="item.unitName" :value="item.id" />
-                </el-select>
-              </el-form-item>
+          <el-form :model="queryForm" size="default" class="custom-query-form standard-material-query-form">
+            <div class="filter-row-primary">
+              <div class="filter-inputs">
+                <el-form-item>
+                  <el-input v-model="queryForm.materialName" placeholder="输入材料名称" clearable style="width: 220px" />
+                </el-form-item>
+                <el-form-item>
+                  <el-input v-model="queryForm.specification" placeholder="输入规格型号" clearable style="width: 220px" />
+                </el-form-item>
+              </div>
+              <div class="action-group">
+                <el-button type="primary" @click="handleQuery" icon="Search" class="btn-search">查询</el-button>
+                <el-button @click="handleReset" icon="Refresh" class="btn-reset">重置</el-button>
+                <el-button link type="primary" @click="showMaterialAdvanced = !showMaterialAdvanced" class="btn-advanced">
+                  {{ showMaterialAdvanced ? '收起' : '高级' }}
+                  <el-icon class="el-icon--right"><component :is="showMaterialAdvanced ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
+                </el-button>
+              </div>
             </div>
-            <div class="filter-btns">
-              <el-button type="primary" @click="handleQuery" icon="Search" class="btn-search">查询</el-button>
-              <el-button @click="handleReset" icon="Refresh" class="btn-reset">重置</el-button>
-              <el-button type="success" @click="handleAdd" icon="Plus" class="btn-add">新增材料</el-button>
-            </div>
+
+            <el-collapse-transition>
+              <div v-show="showMaterialAdvanced" class="filter-row-secondary">
+                <el-form-item>
+                  <el-input v-model="queryForm.materialCode" placeholder="输入编码" clearable style="width: 180px" />
+                </el-form-item>
+                <el-form-item>
+                  <el-select v-model="queryForm.unitId" placeholder="单位" clearable style="width: 140px">
+                    <el-option v-for="item in unitList" :key="item.id" :label="getUnitDisplayName(item)" :value="item.id" />
+                  </el-select>
+                </el-form-item>
+              </div>
+            </el-collapse-transition>
           </el-form>
         </section>
 
         <section class="table-container-glass">
           <el-table :data="tableData" style="width: 100%" v-loading="loading" class="custom-modern-table">
-            <el-table-column type="index" label="序号" width="60" align="center">
-              <template #default="{ $index }">
-                <span class="index-badge">{{ $index + 1 }}</span>
+            <el-table-column type="index" label="序号" width="60" align="center" fixed="left" />
+            <el-table-column prop="materialCode" label="材料编码" width="130" align="center" fixed="left" />
+            <el-table-column prop="materialName" label="材料名称" min-width="220" fixed="left" show-overflow-tooltip />
+            <el-table-column prop="specification" label="规格型号" min-width="200" show-overflow-tooltip />
+            <el-table-column label="单位" width="80" align="center">
+              <template #default="{ row }">
+                {{ getUnitDisplayName(row) }}
               </template>
             </el-table-column>
-            <el-table-column prop="materialCode" label="材料编码" width="130" align="center">
+            <el-table-column label="分类" min-width="240" show-overflow-tooltip>
               <template #default="{ row }">
-                <span class="code-text">{{ row.materialCode }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="materialName" label="材料名称" min-width="220">
-              <template #default="{ row }">
-                <div class="material-info-cell">
-                  <span class="name-text">{{ row.materialName }}</span>
-                  <span class="remark-text" v-if="row.remark">{{ row.remark }}</span>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column prop="unitName" label="单位" width="80" align="center">
-              <template #default="{ row }">
-                <el-tag size="small" effect="plain" type="info">{{ row.unitName }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="categoryLevel1Name" label="一级分类" width="120" align="center" />
-            <el-table-column prop="categoryLevel2Name" label="二级分类" width="120" align="center" />
-            <el-table-column prop="categoryLevel3Name" label="三级分类" width="120" align="center" />
-            <el-table-column label="操作" width="100" align="center" fixed="right">
-              <template #default="{ row }">
-                <div class="action-btns">
-                  <el-button link type="primary" @click="handleEdit(row)">
-                    <el-icon><EditPen /></el-icon>
-                  </el-button>
-                  <el-divider direction="vertical" />
-                  <el-button link type="danger" @click="handleDelete(row)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </div>
+                {{ row.categoryPath || [row.categoryLevel1Name, row.categoryLevel2Name, row.categoryLevel3Name].filter(Boolean).join('/') }}
               </template>
             </el-table-column>
           </el-table>
@@ -180,10 +173,25 @@
 
       <template v-else-if="activeTab === 'standard_spec_model'">
         <section class="filter-panel-glass">
-          <el-form :model="specQueryForm" inline size="default" class="custom-query-form">
+          <el-form :model="specQueryForm" inline size="default" class="custom-query-form" @submit.prevent>
             <div class="filter-inputs">
-              <el-form-item label="标准材料名称">
-                <el-input v-model="specQueryForm.standardName" placeholder="输入标准名称" clearable style="width: 220px" />
+              <el-form-item>
+                <el-input
+                  v-model="specQueryForm.standardName"
+                  placeholder="输入标准名称"
+                  clearable
+                  style="width: 220px"
+                  @keydown.enter.prevent="handleSpecQuery"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-input
+                  v-model="specQueryForm.specKeyword"
+                  placeholder="输入规格型号"
+                  clearable
+                  style="width: 220px"
+                  @keydown.enter.prevent="handleSpecQuery"
+                />
               </el-form-item>
             </div>
             <div class="filter-btns">
@@ -197,17 +205,12 @@
         <section class="table-container-glass">
           <el-table :data="specTableData" style="width: 100%" v-loading="specLoading" class="custom-modern-table">
             <el-table-column type="index" label="序号" width="60" align="center" fixed="left" />
-            <el-table-column label="标准名称ID" width="120" align="center">
-              <template #default="{ row }">
-                {{ row.stdNameCode || row.std_name_code || '' }}
-              </template>
-            </el-table-column>
             <el-table-column prop="standardName" label="标准材料名称" min-width="200" fixed="left" />
             <el-table-column prop="specSummary" label="规格型号" min-width="360" show-overflow-tooltip />
             <el-table-column label="单位" width="110">
               <template #default="{ row }">
                 <el-space wrap>
-                  <el-tag v-for="u in row.units || []" :key="u" size="small" effect="plain">{{ u }}</el-tag>
+                  <el-tag v-for="u in getSpecUnitLabels(row)" :key="u" size="small" effect="plain">{{ u }}</el-tag>
                 </el-space>
               </template>
             </el-table-column>
@@ -250,7 +253,7 @@
         <section class="filter-panel-glass">
           <el-form :model="unitQueryForm" inline size="default" class="custom-query-form">
             <div class="filter-inputs">
-              <el-form-item label="单位名称">
+              <el-form-item>
                 <el-input v-model="unitQueryForm.unitName" placeholder="输入单位名称" clearable style="width: 220px" />
               </el-form-item>
             </div>
@@ -265,18 +268,11 @@
         <section class="table-container-glass">
           <el-table :data="unitTableData" style="width: 100%" v-loading="unitLoading" class="custom-modern-table">
             <el-table-column type="index" label="序号" width="60" align="center" fixed="left" />
-            <el-table-column label="单位ID" width="110" align="center">
+            <el-table-column label="单位名称" min-width="220">
               <template #default="{ row }">
-                {{ row.unitBizId || row.unit_biz_id || '' }}
+                {{ getUnitDisplayName(row) }}
               </template>
             </el-table-column>
-            <el-table-column prop="unitCode" label="单位编码" width="120" align="center">
-              <template #default="{ row }">
-                <span class="code-text">{{ row.unitCode }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="unitName" label="单位名称" min-width="220" />
-            <el-table-column prop="unitSymbol" label="单位符号" width="160" align="center" />
             <el-table-column label="状态" width="100" align="center">
               <template #default="{ row }">
                 <el-tag size="small" :type="row.status === '1' ? 'success' : 'info'">
@@ -314,11 +310,11 @@
         </section>
       </template>
 
-      <template v-else>
+      <template v-else-if="activeTab === 'standard_process_segment'">
         <section class="filter-panel-glass">
           <el-form :model="processSegmentQueryForm" inline size="default" class="custom-query-form">
             <div class="filter-inputs">
-              <el-form-item label="工艺段名称">
+              <el-form-item>
                 <el-input v-model="processSegmentQueryForm.segmentName" placeholder="输入工艺段名称" clearable style="width: 220px" />
               </el-form-item>
             </div>
@@ -363,6 +359,10 @@
           </div>
         </section>
       </template>
+
+      <template v-else>
+        <MaterialStandardReviewTab :selected-category="selectedCategory" />
+      </template>
     </main>
 
     <el-dialog
@@ -397,7 +397,7 @@
 
         <el-form-item label="计量单位" prop="unitId">
           <el-select v-model="formData.unitId" placeholder="请选择计量单位" style="width: 100%" @change="generateCode">
-            <el-option v-for="item in unitList" :key="item.id" :label="`${item.unitName} (${item.unitCode})`" :value="item.id" />
+            <el-option v-for="item in unitList" :key="item.id" :label="getUnitDisplayName(item)" :value="item.id" />
           </el-select>
         </el-form-item>
 
@@ -432,70 +432,118 @@
       v-model="specDialogVisible"
       :title="specDialogTitle"
       width="760px"
+      class="spec-model-dialog"
+      align-center
       :close-on-click-modal="false"
       @close="handleSpecDialogClose"
     >
-      <el-form ref="specFormRef" :model="specFormData" label-width="110px" size="default">
-        <el-form-item label="标准材料名称" required>
-          <el-input v-model="specFormData.standardName" placeholder="请输入标准材料名称" maxlength="200" />
-        </el-form-item>
+      <div ref="specDialogScrollRef" class="spec-dialog-scroll">
+        <el-form ref="specFormRef" :model="specFormData" label-width="120px" size="default">
+          <el-form-item label="标准材料名称" required>
+            <el-input v-model="specFormData.standardName" placeholder="请输入标准材料名称" maxlength="200" />
+          </el-form-item>
 
-        <el-form-item label="所属分类" required>
-          <el-cascader
-            v-model="specFormData.categoryPath"
-            :options="specCategoryOptions"
-            :props="specCategoryCascaderProps"
-            placeholder="请选择所属分类，如：设备/通用设备/闸门"
-            clearable
-            filterable
-            style="width: 100%"
-            @change="handleSpecCategoryChange"
-          />
-        </el-form-item>
+          <el-form-item label="所属分类" required>
+            <el-cascader
+              v-model="specFormData.categoryPath"
+              :options="specCategoryOptions"
+              :props="specCategoryCascaderProps"
+              placeholder="请选择所属分类，如：设备/通用设备/闸门"
+              clearable
+              filterable
+              style="width: 100%"
+              @change="handleSpecCategoryChange"
+            />
+          </el-form-item>
 
-        <el-form-item label="单位(可多选)" required>
-          <el-select
-            v-model="specFormData.unitIds"
-            multiple
-            filterable
-            clearable
-            style="width: 100%"
-            placeholder="请选择单位库中的单位"
-          >
-            <el-option v-for="item in unitList" :key="item.id" :label="item.unitName" :value="item.id" />
-          </el-select>
-        </el-form-item>
+          <el-form-item label="单位(可多选)" required>
+            <el-select
+              v-model="specFormData.unitIds"
+              multiple
+              filterable
+              clearable
+              style="width: 100%"
+              placeholder="请选择单位库中的单位"
+            >
+              <el-option v-for="item in unitList" :key="item.id" :label="getUnitDisplayName(item)" :value="item.id" />
+            </el-select>
+          </el-form-item>
 
-        <el-form-item label="规格型号" required class="spec-model-label">
-          <div class="spec-items-box">
-            <div class="spec-item-row" v-for="(item, idx) in specFormData.specItems" :key="idx">
-              <div class="spec-item-main">
-                <el-input v-model="item.specKey" placeholder="规格名称，如：功率N" class="spec-key-input" />
-                <div class="spec-values-list">
-                  <div class="spec-value-row" v-for="(value, valueIdx) in item.specValues" :key="valueIdx">
-                    <el-input v-model="value.specValue" placeholder="规格值，如：3kW" class="spec-value-input" />
-                    <el-button class="danger-action" type="danger" link @click="removeSpecValue(item, valueIdx)">删除值</el-button>
+          <el-form-item label="规格型号" class="spec-model-label">
+            <div class="spec-items-box">
+              <div class="spec-toolbar">
+                <div class="spec-counter">共 {{ specFormData.specItems.length }} 项</div>
+                <el-button type="primary" plain @click="addSpecItem">
+                  <el-icon><Plus /></el-icon>
+                  新增规格项
+                </el-button>
+              </div>
+
+              <div v-if="!specFormData.specItems.length" class="spec-empty-panel">未填写规格项（选填）</div>
+
+              <div v-for="(item, idx) in specFormData.specItems" :key="idx" :ref="(el) => setSpecItemCardRef(el, idx)" class="spec-item-card">
+                <div class="spec-item-header">
+                  <div class="spec-item-title">
+                    <el-input
+                      v-model="item.specKey"
+                      class="spec-item-name-input"
+                      placeholder="规格名称，如：功率"
+                    />
+                    <span class="spec-item-meta">{{ getSpecValueCount(item) }} 个规格值</span>
                   </div>
-                  <div class="spec-item-tools">
-                    <el-button type="primary" link @click="addSpecValue(item)">+ 新增规格值</el-button>
+                  <div class="spec-item-actions">
+                    <el-tooltip :content="item.collapsed ? '展开规格项' : '收起规格项'" placement="top">
+                      <el-button text circle @click="toggleSpecItem(item)">
+                        <el-icon><component :is="item.collapsed ? ArrowDown : ArrowUp" /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="删除规格项" placement="top">
+                      <el-button type="danger" text circle @click="removeSpecItem(idx)">
+                        <el-icon><Delete /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                  </div>
+                </div>
+
+                <div v-show="!item.collapsed" class="spec-card-body">
+                  <div class="spec-values-list">
+                    <div class="spec-value-adder">
+                      <el-input
+                        v-model="item.draftValue"
+                        placeholder="输入规格值后按 Enter 添加，如：3kW"
+                        @keydown.enter.prevent="addSpecValue(item)"
+                      />
+                      <el-button type="primary" plain @click="addSpecValue(item)">
+                        <el-icon><Plus /></el-icon>
+                      </el-button>
+                    </div>
+
+                    <div class="spec-values-tags">
+                      <el-tag
+                        v-for="(value, valueIdx) in item.specValues"
+                        :key="valueIdx"
+                        closable
+                        effect="plain"
+                        @close="removeSpecValue(item, valueIdx)"
+                      >
+                        {{ value.specValue }}
+                      </el-tag>
+                      <span v-if="!item.specValues?.length" class="spec-empty-text">暂无规格值，请添加</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="spec-item-action">
-                <el-button class="danger-action" type="danger" link @click="removeSpecItem(idx)">删除型号</el-button>
-              </div>
             </div>
-            <el-button type="primary" link @click="addSpecItem">+ 新增规格型号</el-button>
-          </div>
-        </el-form-item>
+          </el-form-item>
 
-        <el-form-item label="状态">
-          <el-radio-group v-model="specFormData.status">
-            <el-radio label="1">正常</el-radio>
-            <el-radio label="0">停用</el-radio>
-          </el-radio-group>
-        </el-form-item>
-      </el-form>
+          <el-form-item label="状态">
+            <el-radio-group v-model="specFormData.status">
+              <el-radio label="1">正常</el-radio>
+              <el-radio label="0">停用</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+      </div>
 
       <template #footer>
         <el-button @click="specDialogVisible = false">取消</el-button>
@@ -555,7 +603,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getCategoryTree,
@@ -580,11 +628,13 @@ import {
   deleteSpecModel,
   syncMaterialKnowledge
 } from '@/api/material'
-import { FolderOpened, Memo, EditPen, Delete } from '@element-plus/icons-vue'
+import { FolderOpened, Memo, EditPen, Delete, Plus, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import CategoryManageModal from './CategoryManageModal.vue'
+import MaterialStandardReviewTab from './MaterialStandardReviewTab.vue'
 
 const sidebarCollapsed = ref(false)
 const activeTab = ref('standard_material')
+const showMaterialAdvanced = ref(false)
 
 const categoryTree = ref([])
 const specList = ref([])
@@ -595,6 +645,8 @@ const categoryTreeRef = ref()
 const filteredCategoryTree = ref([])
 const isExpandAll = ref(true)
 const categoryManageRef = ref(null)
+const ALL_CATEGORY_KEY = 'ALL'
+const selectedCategoryKey = ref(ALL_CATEGORY_KEY)
 
 const selectedCategory = reactive({
   level: null,
@@ -609,12 +661,11 @@ const selectedCategory = reactive({
 const queryForm = reactive({
   materialCode: '',
   materialName: '',
+  specification: '',
   categoryLevel1Id: null,
   categoryLevel2Id: null,
   categoryLevel3Id: null,
-  specId: null,
   unitId: null,
-  status: '1',
   pageNum: 1,
   pageSize: 20
 })
@@ -625,8 +676,10 @@ const loading = ref(false)
 
 const specQueryForm = reactive({
   standardName: '',
+  specKeyword: '',
   categoryLevel1Id: null,
   categoryLevel2Id: null,
+  categoryLevel3Id: null,
   status: '1',
   pageNum: 1,
   pageSize: 20
@@ -683,11 +736,13 @@ const formRules = {
 const specDialogVisible = ref(false)
 const specFormRef = ref()
 const specSubmitLoading = ref(false)
+const specDialogScrollRef = ref(null)
+const specItemCardRefs = ref([])
 const specFormData = reactive({
   id: null,
   standardName: '',
   categoryPath: [],
-  categoryLevel2Id: null,
+  linkedCategoryId: null,
   unitIds: [],
   specItems: [],
   status: '1'
@@ -730,10 +785,26 @@ const specCategoryCascaderProps = {
   label: 'categoryName',
   children: 'children',
   emitPath: true,
-  checkStrictly: false
+  checkStrictly: true
 }
 
 const specCategoryOptions = computed(() => categoryTree.value || [])
+const getUnitDisplayName = (unit) => {
+  if (!unit) return ''
+  return String(unit.unitSymbol || '').trim() || String(unit.unitName || '').trim()
+}
+const getSpecUnitLabels = (row = {}) => {
+  const fromItems = (row.unitItems || [])
+    .map(item => getUnitDisplayName(item))
+    .filter(Boolean)
+  if (fromItems.length) return fromItems
+
+  const unitIdToName = new Map((unitList.value || []).map(item => [item.id, getUnitDisplayName(item)]))
+  const fromIds = (row.unitIds || []).map(id => unitIdToName.get(id)).filter(Boolean)
+  if (fromIds.length) return fromIds
+
+  return (row.units || []).map(unit => String(unit || '').trim()).filter(Boolean)
+}
 
 onMounted(() => {
   loadCategoryTree()
@@ -777,6 +848,7 @@ const loadCategoryTree = async () => {
   const res = await getCategoryTree()
   categoryTree.value = res || []
   filteredCategoryTree.value = categoryTree.value
+  handleSelectAllCategory(false)
 }
 
 const loadSpecList = async () => {
@@ -796,7 +868,7 @@ const handleTabChange = (name) => {
     handleSpecQuery()
   } else if (name === 'standard_unit') {
     handleUnitQuery()
-  } else {
+  } else if (name === 'standard_process_segment') {
     handleProcessSegmentQuery()
   }
 }
@@ -816,15 +888,15 @@ const handleReset = () => {
   Object.assign(queryForm, {
     materialCode: '',
     materialName: '',
+    specification: '',
     categoryLevel1Id: null,
     categoryLevel2Id: null,
     categoryLevel3Id: null,
-    specId: null,
     unitId: null,
-    status: '1',
     pageNum: 1,
     pageSize: 20
   })
+  handleSelectAllCategory(false)
   handleQuery()
 }
 
@@ -842,8 +914,10 @@ const handleSpecQuery = async () => {
 const handleSpecReset = () => {
   Object.assign(specQueryForm, {
     standardName: '',
+    specKeyword: '',
     categoryLevel1Id: selectedCategory.level === 1 ? selectedCategory.level1Id : null,
-    categoryLevel2Id: selectedCategory.level === 2 || selectedCategory.level === 3 ? selectedCategory.level2Id : null,
+    categoryLevel2Id: selectedCategory.level === 2 ? selectedCategory.level2Id : null,
+    categoryLevel3Id: selectedCategory.level === 3 ? selectedCategory.level3Id : null,
     status: '1',
     pageNum: 1,
     pageSize: 20
@@ -924,80 +998,81 @@ const isCategoryActive = (node) => {
   return String(node.status) === '1'
 }
 
-const getPreferredLevel3Child = (level2Node) => {
-  const level3Children = (level2Node?.children || []).filter(item => item.level === 3)
-  if (!level3Children.length) return null
-  return level3Children.find(isCategoryActive) || null
-}
-
 const resolveSpecSubmitCategoryId = (categoryPath, fallbackId) => {
   if (Array.isArray(categoryPath) && categoryPath.length) {
-    for (let i = categoryPath.length - 1; i >= 0; i--) {
-      const node = findCategoryNodeById(categoryTree.value, categoryPath[i])
-      if (!node || !isCategoryActive(node)) continue
-      if (node.level === 3) return node.id
-      if (node.level === 2) {
-        const preferredLevel3 = getPreferredLevel3Child(node)
-        return preferredLevel3?.id || node.id
-      }
+    const selectedId = categoryPath[categoryPath.length - 1]
+    const selectedNode = findCategoryNodeById(categoryTree.value, selectedId)
+    if (selectedNode && isCategoryActive(selectedNode) && [1, 2, 3].includes(Number(selectedNode.level))) {
+      return selectedNode.id
     }
   }
 
   const fallbackNode = findCategoryNodeById(categoryTree.value, fallbackId)
   if (!fallbackNode || !isCategoryActive(fallbackNode)) return null
-  if (fallbackNode.level === 3) return fallbackNode.id
-  if (fallbackNode.level === 2) {
-    const preferredLevel3 = getPreferredLevel3Child(fallbackNode)
-    return preferredLevel3?.id || fallbackNode.id
-  }
-  return null
+  return [1, 2, 3].includes(Number(fallbackNode.level)) ? fallbackNode.id : null
 }
 
 const getSpecCategoryPathByLevel2Id = (level2Id) => {
   if (!level2Id) return []
   const path = findCategoryPath(categoryTree.value, level2Id)
   if (!path) return []
-  const root = path.find(item => item.level === 1)
-  const level2 = path.find(item => item.level === 2)
-  const level3 = path.find(item => item.level === 3)
-  if (root && level2 && level3) return [root.id, level2.id, level3.id]
-  if (root && level2) {
-    // 仅有二级ID时，智能补全到三级，保证级联回显稳定
-    const targetLevel3 = getPreferredLevel3Child(level2)
-    if (targetLevel3) {
-      return [root.id, level2.id, targetLevel3.id]
-    }
-    return [root.id, level2.id]
-  }
-  if (root) return [root.id]
-  return []
+  return path.map(item => item.id)
 }
 
 const getSpecCategoryFullPath = (row) => {
-  const targetId = row?.categoryLevel2Id
+  const targetId = row?.linkedCategoryId
   if (!targetId) return ''
 
-  // 统一按三级路径展示：当记录为二级ID时，自动补到三级再展示
-  const normalizedPathIds = getSpecCategoryPathByLevel2Id(targetId)
-  if (!normalizedPathIds.length) {
+  // 按数据库真实挂载层级展示：二级只展示到二级，三级才展示到三级
+  const pathNodes = findCategoryPath(categoryTree.value, targetId) || []
+  if (!pathNodes.length) {
     return row?.categoryLevel2Name || ''
   }
-  const nameParts = normalizedPathIds
-    .map(id => findCategoryNodeById(categoryTree.value, id)?.categoryName)
+  const nameParts = pathNodes
+    .map(node => node?.categoryName)
     .filter(Boolean)
   return nameParts.length ? nameParts.join('/') : (row?.categoryLevel2Name || '')
 }
 
+const setOverflowTitle = (el, text) => {
+  const value = text == null ? '' : String(text)
+  if (el.scrollWidth > el.clientWidth) {
+    el.setAttribute('title', value)
+  } else {
+    el.removeAttribute('title')
+  }
+}
+
+const vOverflowTitle = {
+  mounted(el, binding) {
+    const handler = () => setOverflowTitle(el, binding.value)
+    el.__overflowTitleHandler__ = handler
+    el.addEventListener('mouseenter', handler)
+    window.addEventListener('resize', handler)
+    requestAnimationFrame(handler)
+  },
+  updated(el, binding) {
+    setOverflowTitle(el, binding.value)
+  },
+  unmounted(el) {
+    const handler = el.__overflowTitleHandler__
+    if (!handler) return
+    el.removeEventListener('mouseenter', handler)
+    window.removeEventListener('resize', handler)
+    delete el.__overflowTitleHandler__
+  }
+}
+
 const handleSpecCategoryChange = (value) => {
-  if (Array.isArray(value) && value.length >= 2) {
-    // 提交前自动纠偏为可用的二/三级分类ID（优先三级）
-    specFormData.categoryLevel2Id = resolveSpecSubmitCategoryId(value, specFormData.categoryLevel2Id)
+  if (Array.isArray(value) && value.length >= 1) {
+    specFormData.linkedCategoryId = resolveSpecSubmitCategoryId(value, specFormData.linkedCategoryId)
     return
   }
-  specFormData.categoryLevel2Id = null
+  specFormData.linkedCategoryId = null
 }
 
 const handleCategorySelect = (data) => {
+  selectedCategoryKey.value = data.id
   const path = findCategoryPath(categoryTree.value, data.id) || [data]
   const level1 = path.find(item => item.level === 1)
   const level2 = path.find(item => item.level === 2)
@@ -1016,23 +1091,61 @@ const handleCategorySelect = (data) => {
     queryForm.categoryLevel3Id = null
     specQueryForm.categoryLevel1Id = data.id
     specQueryForm.categoryLevel2Id = null
+    specQueryForm.categoryLevel3Id = null
   } else if (data.level === 2) {
     queryForm.categoryLevel1Id = level1?.id || null
     queryForm.categoryLevel2Id = data.id
     queryForm.categoryLevel3Id = null
     specQueryForm.categoryLevel1Id = level1?.id || null
     specQueryForm.categoryLevel2Id = data.id
+    specQueryForm.categoryLevel3Id = null
   } else {
     queryForm.categoryLevel1Id = level1?.id || null
     queryForm.categoryLevel2Id = level2?.id || null
     queryForm.categoryLevel3Id = data.id
     specQueryForm.categoryLevel1Id = level1?.id || null
-    specQueryForm.categoryLevel2Id = level2?.id || null
+    specQueryForm.categoryLevel2Id = null
+    specQueryForm.categoryLevel3Id = data.id
   }
 
   queryForm.pageNum = 1
   specQueryForm.pageNum = 1
 
+  if (activeTab.value === 'standard_material') {
+    handleQuery()
+  } else if (activeTab.value === 'standard_spec_model') {
+    handleSpecQuery()
+  } else if (activeTab.value === 'standard_review') {
+    // 复核tab通过props监听selectedCategory后自行触发查询
+  }
+}
+
+const handleSelectAllCategory = (withQuery = true) => {
+  selectedCategoryKey.value = ALL_CATEGORY_KEY
+
+  selectedCategory.level = null
+  selectedCategory.level1Id = null
+  selectedCategory.level1Name = ''
+  selectedCategory.level2Id = null
+  selectedCategory.level2Name = ''
+  selectedCategory.level3Id = null
+  selectedCategory.level3Name = ''
+
+  queryForm.categoryLevel1Id = null
+  queryForm.categoryLevel2Id = null
+  queryForm.categoryLevel3Id = null
+  queryForm.pageNum = 1
+
+  specQueryForm.categoryLevel1Id = null
+  specQueryForm.categoryLevel2Id = null
+  specQueryForm.categoryLevel3Id = null
+  specQueryForm.pageNum = 1
+
+  nextTick(() => {
+    categoryTreeRef.value?.setCurrentKey(null)
+  })
+
+  if (!withQuery) return
   if (activeTab.value === 'standard_material') {
     handleQuery()
   } else if (activeTab.value === 'standard_spec_model') {
@@ -1173,19 +1286,56 @@ const handleDialogClose = () => {
   generatedCode.value = ''
 }
 
-const addSpecItem = () => {
-  specFormData.specItems.push({ specId: null, specKey: '', specValues: [{ specValueId: null, specValue: '' }] })
+const getSpecValueCount = (item = {}) => Array.isArray(item.specValues) ? item.specValues.length : 0
+
+const createEmptySpecItem = () => ({
+  specId: null,
+  specKey: '',
+  specValues: [],
+  draftValue: '',
+  collapsed: false
+})
+
+const setSpecItemCardRef = (el, idx) => {
+  if (!el) return
+  specItemCardRefs.value[idx] = el
+}
+
+const addSpecItem = async () => {
+  specFormData.specItems.push(createEmptySpecItem())
+  await nextTick()
+  const latestIndex = specFormData.specItems.length - 1
+  const latestCard = specItemCardRefs.value[latestIndex]
+  const scrollContainer = specDialogScrollRef.value
+  if (latestCard && scrollContainer) {
+    scrollContainer.scrollTo({
+      top: Math.max(0, latestCard.offsetTop - 12),
+      behavior: 'smooth'
+    })
+  }
 }
 
 const removeSpecItem = (idx) => {
   specFormData.specItems.splice(idx, 1)
+  specItemCardRefs.value = specItemCardRefs.value.filter(Boolean)
+}
+
+const toggleSpecItem = (item) => {
+  item.collapsed = !item.collapsed
 }
 
 const addSpecValue = (specItem) => {
+  const nextValue = String(specItem?.draftValue || '').trim()
+  if (!nextValue) return
   if (!Array.isArray(specItem.specValues)) {
     specItem.specValues = []
   }
-  specItem.specValues.push({ specValueId: null, specValue: '' })
+  if (specItem.specValues.some(item => String(item?.specValue || '').trim() === nextValue)) {
+    specItem.draftValue = ''
+    return
+  }
+  specItem.specValues.push({ specValueId: null, specValue: nextValue })
+  specItem.draftValue = ''
 }
 
 const removeSpecValue = (specItem, valueIdx) => {
@@ -1194,24 +1344,26 @@ const removeSpecValue = (specItem, valueIdx) => {
 }
 
 const handleAddSpecModel = () => {
-  const defaultLevel2Id = selectedCategory.level === 3 ? selectedCategory.level3Id : selectedCategory.level2Id
+  const defaultLevel2Id = selectedCategory.level === 3
+    ? selectedCategory.level3Id
+    : (selectedCategory.level === 2 ? selectedCategory.level2Id : selectedCategory.level1Id)
   const defaultCategoryPath = getSpecCategoryPathByLevel2Id(defaultLevel2Id)
   specDialogVisible.value = true
   Object.assign(specFormData, {
     id: null,
     standardName: '',
     categoryPath: defaultCategoryPath,
-    categoryLevel2Id: defaultCategoryPath[defaultCategoryPath.length - 1] || defaultLevel2Id,
+    linkedCategoryId: defaultCategoryPath[defaultCategoryPath.length - 1] || defaultLevel2Id,
     unitIds: [],
-    specItems: [{ specId: null, specKey: '', specValues: [{ specValueId: null, specValue: '' }] }],
+    specItems: [],
     status: '1'
   })
 }
 
 const handleEditSpecModel = async (row) => {
   const detail = await getSpecModelById(row.id)
-  const categoryPath = getSpecCategoryPathByLevel2Id(detail.categoryLevel2Id)
-  const normalizedCategoryId = resolveSpecSubmitCategoryId(categoryPath, detail.categoryLevel2Id)
+  const categoryPath = getSpecCategoryPathByLevel2Id(detail.linkedCategoryId)
+  const normalizedCategoryId = resolveSpecSubmitCategoryId(categoryPath, detail.linkedCategoryId)
   const normalizeSpecValuesForEdit = (item = {}) => {
     const detailValues = Array.isArray(item.specValueItems) ? item.specValueItems : []
     if (detailValues.length) {
@@ -1231,29 +1383,32 @@ const handleEditSpecModel = async (row) => {
     id: detail.id,
     standardName: detail.standardName,
     categoryPath,
-    categoryLevel2Id: normalizedCategoryId || categoryPath[categoryPath.length - 1] || detail.categoryLevel2Id,
+    linkedCategoryId: normalizedCategoryId || categoryPath[categoryPath.length - 1] || detail.linkedCategoryId,
     unitIds: (detail.unitItems || []).map(item => item.unitId).filter(Boolean),
     specItems: (detail.specItems || []).map(item => ({
       specId: item.specId || null,
       specKey: item.specKey,
-      specValues: normalizeSpecValuesForEdit(item)
+      specValues: normalizeSpecValuesForEdit(item),
+      draftValue: '',
+      collapsed: false
     })),
     status: detail.status || '1'
   })
   if (!specFormData.unitIds.length && Array.isArray(detail.units) && detail.units.length) {
-    const unitNameMap = new Map((unitList.value || []).map(item => [item.unitName, item.id]))
+    const unitNameMap = new Map();
+    (unitList.value || []).forEach(item => {
+      const displayName = getUnitDisplayName(item)
+      if (item.unitName) unitNameMap.set(item.unitName, item.id)
+      if (displayName) unitNameMap.set(displayName, item.id)
+    })
     specFormData.unitIds = detail.units.map(name => unitNameMap.get(name)).filter(Boolean)
   }
-  if (!specFormData.specItems.length) {
-    specFormData.specItems = [{ specId: null, specKey: '', specValues: [{ specValueId: null, specValue: '' }] }]
-  }
   specFormData.specItems.forEach(item => {
-    if (!Array.isArray(item.specValues) || !item.specValues.length) {
-      item.specValues = [{ specValueId: null, specValue: '' }]
-    }
-    item.specValues = item.specValues.map(value =>
+    item.specValues = (item.specValues || []).map(value =>
       typeof value === 'string' ? { specValueId: null, specValue: value } : value
-    )
+    ).filter(value => String(value?.specValue || '').trim())
+    item.draftValue = String(item.draftValue || '')
+    item.collapsed = Boolean(item.collapsed)
   })
 }
 
@@ -1274,18 +1429,18 @@ const submitSpecModel = async () => {
     ElMessage.error('请输入标准材料名称')
     return
   }
-  if (!Array.isArray(specFormData.categoryPath) || specFormData.categoryPath.length < 2) {
-    ElMessage.error('请选择所属分类（二级或三级）')
+  if (!Array.isArray(specFormData.categoryPath) || specFormData.categoryPath.length < 1) {
+    ElMessage.error('请选择所属分类（一级/二级/三级）')
     return
   }
-  const resolvedCategoryId = resolveSpecSubmitCategoryId(specFormData.categoryPath, specFormData.categoryLevel2Id)
+  const resolvedCategoryId = resolveSpecSubmitCategoryId(specFormData.categoryPath, specFormData.linkedCategoryId)
   if (!resolvedCategoryId) {
     ElMessage.error('所属分类不可用，请重新选择')
     return
   }
-  specFormData.categoryLevel2Id = resolvedCategoryId
-  if (!specFormData.categoryLevel2Id) {
-    ElMessage.error('请选择所属二级分类')
+  specFormData.linkedCategoryId = resolvedCategoryId
+  if (!specFormData.linkedCategoryId) {
+    ElMessage.error('请选择所属分类')
     return
   }
   if (!specFormData.unitIds?.length) {
@@ -1313,17 +1468,12 @@ const submitSpecModel = async () => {
     }))
     .filter(item => item.specValueItems.length)
 
-  if (!validSpecItems.length) {
-    ElMessage.error('请至少填写一项规格名称及规格值')
-    return
-  }
-
   const payload = {
     id: specFormData.id || undefined,
     standardName: specFormData.standardName.trim(),
-    categoryLevel2Id: specFormData.categoryLevel2Id,
+    linkedCategoryId: specFormData.linkedCategoryId,
     unitItems: Array.from(new Set(specFormData.unitIds)).map(unitId => ({ unitId })),
-    specItems: validSpecItems,
+    specItems: validSpecItems.length ? validSpecItems : undefined,
     status: specFormData.status
   }
 
@@ -1470,9 +1620,12 @@ const handleSyncKnowledge = async () => {
   knowledgeSyncLoading.value = true
   try {
     const res = await syncMaterialKnowledge()
-    const count = Number(res?.syncedItemCount || 0)
+    const materialCount = Number(res?.materialCount || 0)
+    const processCount = Number(res?.processCount || 0)
+    const categoryCount = Number(res?.categoryCount || 0)
+    const totalCount = Number(res?.syncedItemCount || (materialCount + processCount + categoryCount))
     const msg = res?.message || '知识库已更新（覆盖）'
-    ElMessage.success(`${msg}，同步 ${count} 条标准材料`)
+    ElMessage.success(`${msg}，标准材料 ${materialCount} 条，标准工艺段 ${processCount} 条，标准分类 ${categoryCount} 条（合计 ${totalCount} 条）`)
   } catch (error) {
     console.error('sync knowledge failed:', error)
   } finally {
@@ -1483,9 +1636,10 @@ const handleSyncKnowledge = async () => {
 const handleSpecDialogClose = () => {
   specFormRef.value?.resetFields?.()
   specFormData.categoryPath = []
-  specFormData.categoryLevel2Id = null
+  specFormData.linkedCategoryId = null
   specFormData.unitIds = []
   specFormData.specItems = []
+  specItemCardRefs.value = []
 }
 </script>
 
@@ -1635,6 +1789,31 @@ $border-glass: rgba(255, 255, 255, 0.5);
       margin-bottom: 12px;
       padding: 0;
     }
+
+    .all-category-option {
+      height: 34px;
+      line-height: 34px;
+      margin-bottom: 8px;
+      padding: 0 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #606266;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(55, 124, 253, 0.08);
+        color: #377cfd;
+      }
+
+      &.active {
+        background: rgba(55, 124, 253, 0.12);
+        color: #377cfd;
+        font-weight: 600;
+      }
+    }
   }
 }
 
@@ -1662,6 +1841,7 @@ $border-glass: rgba(255, 255, 255, 0.5);
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
+    transform: translateY(-4px);
   }
   .material-tabs {
     flex: 1;
@@ -1670,9 +1850,12 @@ $border-glass: rgba(255, 255, 255, 0.5);
   .knowledge-sync-btn {
     border-radius: 10px;
     padding: 0 16px;
+    align-self: center;
   }
   :deep(.el-tabs__header) {
     margin: 0;
+    display: flex;
+    align-items: center;
   }
   :deep(.el-tabs__nav-wrap::after) {
     display: none;
@@ -1712,6 +1895,41 @@ $border-glass: rgba(255, 255, 255, 0.5);
     .btn-reset { border-radius: 12px; background: rgba(0,0,0,0.03); border: none; }
     .btn-add { border-radius: 12px; background: #00c261; border: none; }
   }
+
+  .standard-material-query-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+
+    .filter-row-primary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-row-secondary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    .action-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .btn-search { border-radius: 12px; padding: 0 20px; }
+      .btn-reset { border-radius: 12px; background: rgba(0, 0, 0, 0.03); border: none; }
+      .btn-advanced { padding: 0 2px; }
+    }
+
+    :deep(.el-form-item) { margin-bottom: 0; margin-right: 0; }
+  }
 }
 
 .table-container-glass {
@@ -1750,16 +1968,6 @@ $border-glass: rgba(255, 255, 255, 0.5);
       color: #86868b;
     }
 
-    .code-text {
-      font-family: 'Monaco', monospace;
-      background: #f1f3f5;
-      padding: 2px 8px;
-      border-radius: 6px;
-      color: $primary-blue;
-      font-weight: 600;
-      font-size: 12px;
-    }
-
     .material-info-cell {
       display: flex;
       flex-direction: column;
@@ -1783,77 +1991,180 @@ $border-glass: rgba(255, 255, 255, 0.5);
   }
 }
 
+.spec-model-dialog {
+  :deep(.el-dialog) {
+    max-height: calc(80vh + 70px);
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :deep(.el-dialog__body) {
+    flex: 1;
+    min-height: 0;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    overflow: hidden;
+  }
+
+  :deep(.el-dialog__footer) {
+    border-top: 1px solid #f0f2f5;
+    padding-top: 12px;
+  }
+
+  :deep(.el-form-item__label),
+  :deep(.el-input__inner),
+  :deep(.el-textarea__inner),
+  :deep(.el-tag),
+  :deep(.el-radio__label),
+  :deep(.el-button) {
+    font-size: 13px;
+  }
+
+  :deep(.el-form-item__label) {
+    white-space: nowrap;
+  }
+}
+
+.spec-dialog-scroll {
+  max-height: calc(60vh + 70px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
 .spec-items-box {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+}
 
-  .spec-item-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px;
-    border: 1px solid #ebeef5;
-    border-radius: 8px;
-    background: #fafcff;
+.spec-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.spec-counter {
+  color: #606266;
+  font-size: 13px;
+}
+
+.spec-empty-panel {
+  border: 1px dashed #dcdfe6;
+  border-radius: 8px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #909399;
+  font-size: 13px;
+}
+
+.spec-item-card {
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.spec-item-header {
+  min-height: 44px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.spec-item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.spec-item-name-input {
+  width: 240px;
+  max-width: 100%;
+
+  :deep(.el-input__wrapper) {
+    background: #fff;
+    box-shadow: inset 0 0 0 1px #dcdfe6;
+    padding: 0 6px;
   }
 
-  .spec-item-main {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  :deep(.el-input__inner) {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f2937;
+    height: 28px;
+    line-height: 28px;
   }
 
-  .spec-key-input {
-    width: 260px;
-    max-width: 100%;
+  :deep(.el-input__wrapper.is-focus) {
+    background: #fff;
+    box-shadow: inset 0 0 0 1px #409eff;
   }
+}
 
-  .spec-values-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+.spec-item-meta {
+  font-size: 12px;
+  color: #909399;
+  margin-left: auto;
+  width: 170px;
+  text-align: right;
+  flex: 0 0 170px;
+}
 
-  .spec-value-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+.spec-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
-  .spec-value-input {
-    flex: 1;
-    min-width: 220px;
-  }
+.spec-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
 
-  .spec-item-tools {
-    display: flex;
-    justify-content: center;
-    padding-top: 2px;
-  }
+.spec-values-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-  .spec-item-action {
-    width: 72px;
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 6px;
-    flex-shrink: 0;
-  }
+.spec-values-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 30px;
+}
 
-  .danger-action {
-    min-width: 56px;
-    justify-content: flex-end;
+.spec-empty-text {
+  color: #b0b3ba;
+  font-size: 12px;
+}
+
+.spec-value-adder {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+
+  :deep(.el-button) {
+    width: 42px;
     padding: 0;
-    white-space: nowrap;
   }
 }
 
 .spec-model-label {
   :deep(.el-form-item__label) {
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 

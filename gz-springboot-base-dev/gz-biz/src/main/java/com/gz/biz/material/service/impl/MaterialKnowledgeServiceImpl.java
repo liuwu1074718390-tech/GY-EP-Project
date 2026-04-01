@@ -8,11 +8,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gz.biz.material.config.MaterialKnowledgeDifyProperties;
 import com.gz.biz.material.domain.entity.MaterialCategoryDO;
+import com.gz.biz.material.domain.entity.MaterialProcessSegmentDO;
 import com.gz.biz.material.domain.req.MaterialSpecModelIdReq;
 import com.gz.biz.material.domain.req.MaterialSpecModelPageReq;
 import com.gz.biz.material.domain.vo.MaterialKnowledgeSyncVO;
 import com.gz.biz.material.domain.vo.MaterialSpecModelVO;
 import com.gz.biz.material.mapper.MaterialCategoryMapper;
+import com.gz.biz.material.mapper.MaterialProcessSegmentMapper;
 import com.gz.biz.material.service.IMaterialKnowledgeService;
 import com.gz.biz.material.service.IMaterialSpecModelService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,13 +47,22 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
     private static final int CONNECT_TIMEOUT_MS = 10000;
     private static final int READ_TIMEOUT_MS = 30000;
     private static final String MATERIAL_SPLITTER = "\n\n<<<MATERIAL_SEGMENT_SPLITTER>>>\n\n";
+    private static final String PROCESS_SPLITTER = "\n\n<<<PROCESS_SEGMENT_SPLITTER>>>\n\n";
+    private static final String CATEGORY_SPLITTER = "\n\n<<<CATEGORY_SEGMENT_SPLITTER>>>\n\n";
     private static final String MATERIAL_DOCUMENT_TYPE = "material";
+    private static final String PROCESS_DOCUMENT_TYPE = "process";
+    private static final String CATEGORY_DOCUMENT_TYPE = "category";
+    private static final String PROCESS_DOCUMENT_NAME = "标准工艺段";
+    private static final String CATEGORY_DOCUMENT_NAME = "标准分类";
 
     @Resource
     private IMaterialSpecModelService specModelService;
 
     @Resource
     private MaterialCategoryMapper categoryMapper;
+
+    @Resource
+    private MaterialProcessSegmentMapper processSegmentMapper;
 
     @Resource
     private MaterialKnowledgeDifyProperties difyProperties;
@@ -62,24 +73,53 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
         difyProperties.validateOrThrow();
 
         List<MaterialSpecModelVO> materialList = loadAllActiveSpecModels();
-        String content = buildKnowledgeDocument(materialList);
+        String materialContent = buildKnowledgeDocument(materialList);
+        List<MaterialProcessSegmentDO> processSegmentList = loadAllActiveProcessSegments();
+        String processContent = buildProcessKnowledgeDocument(processSegmentList);
+        List<MaterialCategoryDO> categoryList = loadAllActiveCategories();
+        String categoryContent = buildCategoryKnowledgeDocument(categoryList);
 
-        List<String> existsDocumentIds = listSameNameDocumentIds();
-        for (String id : existsDocumentIds) {
-            deleteDocument(id);
-        }
+        UpsertResult materialUpsert = upsertDocumentByText(
+                difyProperties.getDocumentName(),
+                MATERIAL_DOCUMENT_TYPE,
+                MATERIAL_SPLITTER,
+                materialContent
+        );
 
-        String createdDocumentId = createDocumentByText(content);
+        UpsertResult processUpsert = upsertDocumentByText(
+                PROCESS_DOCUMENT_NAME,
+                PROCESS_DOCUMENT_TYPE,
+                PROCESS_SPLITTER,
+                processContent
+        );
+
+        UpsertResult categoryUpsert = upsertDocumentByText(
+                CATEGORY_DOCUMENT_NAME,
+                CATEGORY_DOCUMENT_TYPE,
+                CATEGORY_SPLITTER,
+                categoryContent
+        );
 
         MaterialKnowledgeSyncVO result = new MaterialKnowledgeSyncVO();
         result.setSuccess(Boolean.TRUE);
-        result.setMessage("知识库已更新（覆盖）");
+        result.setMessage("知识库已更新（覆盖：标准材料数据 + 标准工艺段 + 标准分类）");
         result.setDatasetId(difyProperties.getDatasetId());
         result.setDocumentName(difyProperties.getDocumentName());
-        result.setDeletedCount(existsDocumentIds.size());
-        result.setCreatedDocumentId(createdDocumentId);
-        result.setSyncedItemCount(materialList.size());
+        result.setDeletedCount(materialUpsert.deletedCount + processUpsert.deletedCount + categoryUpsert.deletedCount);
+        result.setCreatedDocumentId(materialUpsert.documentId);
+        result.setSyncedItemCount(materialList.size() + processSegmentList.size() + categoryList.size());
+        result.setMaterialCount(materialList.size());
+        result.setProcessCount(processSegmentList.size());
+        result.setCategoryCount(categoryList.size());
+        result.setProcessDocumentId(processUpsert.documentId);
+        result.setCategoryDocumentId(categoryUpsert.documentId);
         return result;
+    }
+
+    private List<MaterialProcessSegmentDO> loadAllActiveProcessSegments() {
+        return processSegmentMapper.selectList(new LambdaQueryWrapper<MaterialProcessSegmentDO>()
+                .eq(MaterialProcessSegmentDO::getStatus, "1")
+                .orderByAsc(MaterialProcessSegmentDO::getSegmentBizId, MaterialProcessSegmentDO::getId));
     }
 
     private List<MaterialSpecModelVO> loadAllActiveSpecModels() {
@@ -120,6 +160,12 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
             pageNum++;
         }
         return all;
+    }
+
+    private List<MaterialCategoryDO> loadAllActiveCategories() {
+        return categoryMapper.selectList(new LambdaQueryWrapper<MaterialCategoryDO>()
+                .eq(MaterialCategoryDO::getStatus, "1")
+                .orderByAsc(MaterialCategoryDO::getLevel, MaterialCategoryDO::getSortOrder, MaterialCategoryDO::getId));
     }
 
     private String buildKnowledgeDocument(List<MaterialSpecModelVO> materialList) {
@@ -176,9 +222,62 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
         return String.join(MATERIAL_SPLITTER, blocks);
     }
 
-    private List<String> listSameNameDocumentIds() {
-        String documentName = difyProperties.getDocumentName();
-        List<String> ids = new ArrayList<>();
+    private String buildProcessKnowledgeDocument(List<MaterialProcessSegmentDO> processSegmentList) {
+        List<String> blocks = new ArrayList<>();
+        for (MaterialProcessSegmentDO segment : processSegmentList) {
+            if (segment == null) {
+                continue;
+            }
+            LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
+            payload.put("标准工艺段名称", segment.getSegmentName());
+            payload.put("标准工艺段ID", resolveSegmentBizId(segment));
+            blocks.add(JSON.toJSONString(payload, JSONWriter.Feature.PrettyFormat));
+        }
+        return String.join(PROCESS_SPLITTER, blocks);
+    }
+
+    private String buildCategoryKnowledgeDocument(List<MaterialCategoryDO> categoryList) {
+        List<String> blocks = new ArrayList<>();
+        if (categoryList == null || categoryList.isEmpty()) {
+            return "";
+        }
+        Map<Long, MaterialCategoryDO> byId = categoryList.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getId() != null)
+                .collect(Collectors.toMap(MaterialCategoryDO::getId, item -> item, (a, b) -> a, LinkedHashMap::new));
+
+        List<MaterialCategoryDO> level3List = categoryList.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> Objects.equals(item.getLevel(), 3))
+                .collect(Collectors.toList());
+        level3List.sort((a, b) -> {
+            String codeA = resolveLevel3CategoryCode(a, byId);
+            String codeB = resolveLevel3CategoryCode(b, byId);
+            int cmp = codeA.compareTo(codeB);
+            if (cmp != 0) {
+                return cmp;
+            }
+            Long idA = a.getId() == null ? 0L : a.getId();
+            Long idB = b.getId() == null ? 0L : b.getId();
+            return idA.compareTo(idB);
+        });
+
+        for (MaterialCategoryDO level3 : level3List) {
+            MaterialCategoryDO level2 = level3.getParentId() == null ? null : byId.get(level3.getParentId());
+            MaterialCategoryDO level1 = (level2 == null || level2.getParentId() == null) ? null : byId.get(level2.getParentId());
+
+            LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
+            payload.put("一级分类", safeName(level1));
+            payload.put("二级分类", safeName(level2));
+            payload.put("三级分类", safeName(level3));
+            payload.put("三级分类编码", resolveLevel3CategoryCode(level3, byId));
+            blocks.add(JSON.toJSONString(payload, JSONWriter.Feature.PrettyFormat));
+        }
+        return String.join(CATEGORY_SPLITTER, blocks);
+    }
+
+    private List<DocumentLite> listSameNameDocuments(String documentName) {
+        List<DocumentLite> docs = new ArrayList<>();
         int page = 1;
         while (true) {
             JSONObject response = doGet(
@@ -195,7 +294,7 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
                 String name = obj.getString("name");
                 String id = obj.getString("id");
                 if (documentName.equals(name) && StringUtils.hasText(id)) {
-                    ids.add(id);
+                    docs.add(new DocumentLite(id, name));
                 }
             }
 
@@ -208,20 +307,27 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
                 break;
             }
         }
-        return ids.stream().filter(StringUtils::hasText).distinct().collect(Collectors.toList());
+        Map<String, DocumentLite> unique = new LinkedHashMap<>();
+        for (DocumentLite doc : docs) {
+            if (doc == null || !StringUtils.hasText(doc.id)) {
+                continue;
+            }
+            unique.putIfAbsent(doc.id, doc);
+        }
+        return new ArrayList<>(unique.values());
     }
 
     private void deleteDocument(String documentId) {
         doRequest("DELETE", "/datasets/" + difyProperties.getDatasetId() + "/documents/" + documentId, null);
     }
 
-    private String createDocumentByText(String content) {
+    private String createDocumentByText(String documentName, String documentType, String splitter, String content) {
         JSONObject body = new JSONObject();
-        body.put("name", difyProperties.getDocumentName());
+        body.put("name", documentName);
         body.put("text", content);
         body.put("indexing_technique", "high_quality");
-        body.put("process_rule", buildCustomProcessRule());
-        body.put("metadata", buildDocumentMetadata());
+        body.put("process_rule", buildCustomProcessRule(splitter));
+        body.put("metadata", buildDocumentMetadata(documentType));
 
         JSONObject resp;
         try {
@@ -229,25 +335,48 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
         } catch (Exception ex) {
             log.warn("Dify create-by-text 接口调用失败，尝试回退到 /documents: {}", ex.getMessage());
             JSONObject fallbackBody = new JSONObject();
-            fallbackBody.put("name", difyProperties.getDocumentName());
+            fallbackBody.put("name", documentName);
             fallbackBody.put("text", content);
             fallbackBody.put("indexing_technique", "high_quality");
-            fallbackBody.put("process_rule", buildCustomProcessRule());
-            fallbackBody.put("metadata", buildDocumentMetadata());
+            fallbackBody.put("process_rule", buildCustomProcessRule(splitter));
+            fallbackBody.put("metadata", buildDocumentMetadata(documentType));
             resp = doRequest("POST", "/datasets/" + difyProperties.getDatasetId() + "/documents", fallbackBody);
         }
         return extractCreatedDocumentId(resp);
     }
 
-    private JSONObject buildDocumentMetadata() {
+    private String updateDocumentByText(String documentId, String documentName, String splitter, String content) {
+        JSONObject body = new JSONObject();
+        body.put("name", documentName);
+        body.put("text", content);
+        body.put("indexing_technique", "high_quality");
+        body.put("process_rule", buildCustomProcessRule(splitter));
+        JSONObject resp = doRequest("POST", "/datasets/" + difyProperties.getDatasetId() + "/documents/" + documentId + "/update-by-text", body);
+        String updatedId = extractCreatedDocumentId(resp);
+        return StringUtils.hasText(updatedId) ? updatedId : documentId;
+    }
+
+    private UpsertResult upsertDocumentByText(String documentName, String documentType, String splitter, String content) {
+        List<DocumentLite> docs = listSameNameDocuments(documentName);
+        if (docs.isEmpty()) {
+            String createdId = createDocumentByText(documentName, documentType, splitter, content);
+            return new UpsertResult(createdId, 0);
+        }
+
+        String keepDocId = docs.get(0).id;
+        String updatedId = updateDocumentByText(keepDocId, documentName, splitter, content);
+        return new UpsertResult(updatedId, 0);
+    }
+
+    private JSONObject buildDocumentMetadata(String documentType) {
         JSONObject metadata = new JSONObject();
-        metadata.put("type", MATERIAL_DOCUMENT_TYPE);
+        metadata.put("type", documentType);
         return metadata;
     }
 
-    private JSONObject buildCustomProcessRule() {
+    private JSONObject buildCustomProcessRule(String splitter) {
         JSONObject segmentation = new JSONObject();
-        segmentation.put("separator", MATERIAL_SPLITTER.trim());
+        segmentation.put("separator", splitter.trim());
         segmentation.put("max_tokens", 4000);
 
         JSONArray preProcessingRules = new JSONArray();
@@ -429,6 +558,19 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
         return String.format("V%06d", specValueVO.getSpecValueId());
     }
 
+    private String resolveSegmentBizId(MaterialProcessSegmentDO segment) {
+        if (segment == null) {
+            return "";
+        }
+        if (StringUtils.hasText(segment.getSegmentBizId())) {
+            return segment.getSegmentBizId();
+        }
+        if (segment.getId() == null) {
+            return "";
+        }
+        return String.format("P%04d", segment.getId());
+    }
+
     private CategoryPath resolveCategoryPath(Long categoryLevel2Id) {
         if (categoryLevel2Id == null) {
             return CategoryPath.empty();
@@ -480,6 +622,38 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
         return category == null ? "" : category.getCategoryName();
     }
 
+    private String normalizeCategoryCodePart(String categoryCode) {
+        if (!StringUtils.hasText(categoryCode)) {
+            return "";
+        }
+        String code = categoryCode.trim().replaceAll("\\D", "");
+        if (!StringUtils.hasText(code)) {
+            return "";
+        }
+        if (code.length() == 1) {
+            return "0" + code;
+        }
+        if (code.length() == 2) {
+            return code;
+        }
+        return code.substring(code.length() - 2);
+    }
+
+    private String resolveLevel3CategoryCode(MaterialCategoryDO level3, Map<Long, MaterialCategoryDO> byId) {
+        if (level3 == null) {
+            return "";
+        }
+        MaterialCategoryDO level2 = level3.getParentId() == null ? null : byId.get(level3.getParentId());
+        MaterialCategoryDO level1 = (level2 == null || level2.getParentId() == null) ? null : byId.get(level2.getParentId());
+        String mergedCode = normalizeCategoryCodePart(level1 == null ? null : level1.getCategoryCode())
+                + normalizeCategoryCodePart(level2 == null ? null : level2.getCategoryCode())
+                + normalizeCategoryCodePart(level3.getCategoryCode());
+        if (!StringUtils.hasText(mergedCode)) {
+            return "";
+        }
+        return mergedCode.startsWith("26") ? mergedCode : "26" + mergedCode;
+    }
+
     private String truncate(String text) {
         if (!StringUtils.hasText(text)) {
             return "";
@@ -503,6 +677,26 @@ public class MaterialKnowledgeServiceImpl implements IMaterialKnowledgeService {
 
         private static CategoryPath empty() {
             return new CategoryPath("", "", "");
+        }
+    }
+
+    private static class DocumentLite {
+        private final String id;
+        private final String name;
+
+        private DocumentLite(String id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+    }
+
+    private static class UpsertResult {
+        private final String documentId;
+        private final int deletedCount;
+
+        private UpsertResult(String documentId, int deletedCount) {
+            this.documentId = documentId;
+            this.deletedCount = deletedCount;
         }
     }
 }

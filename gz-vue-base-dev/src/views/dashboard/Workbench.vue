@@ -4,44 +4,16 @@
     <div class="background-overlay"></div>
 
     <div class="workbench-layout">
-      <!-- 左侧菜单卡片 -->
-      <aside class="sidebar-glass">
-        <div class="logo-container">
-          <div class="logo-box">
-            <img src="@/assets/images/user-logo.png" alt="Logo" />
-          </div>
-          <h1 class="app-name">广业环保</h1>
-        </div>
-        <nav class="side-menu">
-          <div 
-            v-for="item in menuItems" 
-            :key="item.name" 
-            :class="['menu-item', { active: activeMenu === item.name || (activeMenu === '材价详情' && item.name === '材价查询') || (activeMenu === '组价详情' && item.name === '智能组价') }]"
-            @click="handleMenuClick(item.name)"
-          >
-            <el-icon><component :is="item.icon" /></el-icon>
-            <span class="menu-text">{{ item.label }}</span>
-          </div>
-        </nav>
-        <div class="sidebar-footer">
-          <div class="user-avatar-section" @click="goUserCenter">
-            <img :src="userStore.avatar || '@/assets/images/touxiang.png'" class="user-avatar" alt="User" />
-            <span class="user-name-text">{{ userStore.nickName || '用户' }}</span>
-          </div>
-          <div class="footer-actions">
-            <el-tooltip content="个人中心" placement="top">
-              <div class="action-item" @click="goUserCenter">
-                <el-icon><User /></el-icon>
-              </div>
-            </el-tooltip>
-            <el-tooltip content="退出登录" placement="top">
-              <div class="action-item" @click="handleLogout">
-                <el-icon><SwitchButton /></el-icon>
-              </div>
-            </el-tooltip>
-          </div>
-        </div>
-      </aside>
+      <WorkbenchSidebar
+        :menu-items="menuItems"
+        :active-menu="activeMenu"
+        :active-matcher="isSidebarMenuActive"
+        :user-name="userStore.nickName"
+        :user-avatar="userStore.avatar"
+        @menu-click="handleMenuClick"
+        @user-center="goUserCenter"
+        @logout="handleLogout"
+      />
 
       <!-- 主内容区 -->
       <main class="main-content">
@@ -72,6 +44,8 @@ import SupplierQuery from '../system/SupplierQuery.vue'
 import MaterialDetail from './MaterialDetail.vue'
 import SmartPricing from './SmartPricing.vue'
 import PricingDetail from './PricingDetail.vue'
+import MaterialPriceCreate from './MaterialPriceCreate.vue'
+import WorkbenchSidebar from './components/WorkbenchSidebar.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import useUserStore from '@/store/modules/user'
@@ -114,6 +88,7 @@ const componentMap = {
   '供应商查询': SupplierQuery,
   '材料标准': MaterialStandard,
   '材价详情': MaterialDetail,
+  '新增材价': MaterialPriceCreate,
   '智能组价': SmartPricing,
   '组价详情': PricingDetail,
   // 后续可继续添加其他模块
@@ -123,7 +98,7 @@ const componentMap = {
 
 // 初始化 activeMenu，优先从 URL query 读取，实现刷新保持状态
 const initialTab = route.query.tab
-const isValidMenu = (name) => !!componentMap[name] || ['材料标准', '供应商查询', '材价详情', '智能组价', '组价详情'].includes(name)
+const isValidMenu = (name) => !!componentMap[name] || ['材料标准', '供应商查询', '材价详情', '新增材价', '智能组价', '组价详情'].includes(name)
 const activeMenu = ref(isValidMenu(initialTab) ? initialTab : '驾驶舱')
 
 // 当前视图组件
@@ -137,6 +112,13 @@ const menuItems = [
   { name: '供应商查询', label: '供应商查询', icon: 'OfficeBuilding' },
   { name: '材料标准', label: '材料标准', icon: 'Collection' },
 ]
+
+const isSidebarMenuActive = (menuName) => (
+  activeMenu.value === menuName ||
+  (activeMenu.value === '新增材价' && menuName === '材价查询') ||
+  (activeMenu.value === '材价详情' && menuName === '材价查询') ||
+  (activeMenu.value === '组价详情' && menuName === '智能组价')
+)
 
 // 菜单点击处理
 const handleMenuClick = (menuName) => {
@@ -195,195 +177,6 @@ $text-sub: #86868b;
   width: 100%;
   height: 100%;
   max-width: 1440px;
-}
-
-// 侧边栏样式
-.sidebar-glass {
-  width: 200px;
-  height: 100%;
-  background: $glass-bg;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid $glass-border;
-  border-radius: 30px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px 0 4px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-
-  .logo-container {
-    flex-shrink: 0; // 防止 Logo 被压缩
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 0 16px;
-
-    .logo-box {
-      width: 50px;
-      height: 50px;
-      background: white;
-      border-radius: 18px;
-      padding: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 24px rgba(55, 124, 253, 0.15);
-      transition: transform 0.3s ease;
-
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
-      &:hover {
-        transform: translateY(-2px) scale(1.02);
-        box-shadow: 0 12px 32px rgba(55, 124, 253, 0.2);
-      }
-    }
-
-    .app-name {
-      font-size: 16px;
-      font-weight: 700;
-      color: #1d1d1f;
-      letter-spacing: 1px;
-      margin: 0;
-      text-align: center;
-      background: linear-gradient(135deg, #1d1d1f 0%, #4a4a4f 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      opacity: 0.9;
-    }
-  }
-
-  .side-menu {
-    flex: 1;
-    min-height: 0; // 关键：允许 flex 子项收缩
-    overflow-y: auto; // 关键：内容溢出时滚动
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 100%;
-    padding: 10px 12px 0; // 增加顶部内边距，防止第一个菜单项被裁剪
-    
-    
-    // 隐藏滚动条
-    &::-webkit-scrollbar {
-      width: 0;
-      height: 0;
-    }
-
-    .menu-item {
-      flex-shrink: 0; // 防止菜单项本身被压缩变形
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 13px 2px 7px;
-      border-radius: 16px;
-      cursor: pointer;
-      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-      color: $text-sub;
-
-      .el-icon {
-        font-size: 20px;
-        margin-bottom: 4px;
-        transition: transform 0.3s;
-      }
-
-      .menu-text {
-        font-size: 13px;
-        font-weight: 500;
-        letter-spacing: 0.5px;
-      }
-
-      &:hover {
-        background: rgba(255,255,255,0.8);
-        color: $primary-blue;
-        .el-icon { transform: scale(1.1); }
-      }
-
-      &.active {
-        background: linear-gradient(135deg, $primary-blue 0%, #5c7cfa 100%);
-        color: white;
-        box-shadow: 0 8px 20px rgba($primary-blue, 0.3);
-        transform: translateY(-2px);
-      }
-    }
-  }
-
-  .sidebar-footer {
-    flex-shrink: 0; // 防止底部被压缩
-    margin-top: auto;
-    width: 100%;
-    padding: 20px 0;
-    border-top: 1px solid rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
-    
-    .user-avatar-section {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      flex: 1;
-      min-width: 0; // 允许 flex 子项收缩
-      
-      .user-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transition: transform 0.3s;
-        flex-shrink: 0;
-        &:hover { transform: scale(1.05); }
-      }
-      
-      .user-name-text {
-        font-size: 14px;
-        font-weight: 600;
-        color: #333;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 80px;
-      }
-    }
-
-    .footer-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-      
-      .action-item {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: $text-sub;
-        cursor: pointer;
-        transition: all 0.2s;
-        
-        &:hover {
-          background: white;
-          color: $primary-blue;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-          transform: translateY(-2px);
-        }
-        
-        .el-icon { font-size: 18px; }
-      }
-    }
-  }
 }
 
 // 主内容样式

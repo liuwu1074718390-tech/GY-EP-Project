@@ -10,7 +10,7 @@ DB_CONFIG = {
     'port': 3306,
     'user': 'root',
     'password': 'mysqlroot',
-    'database': 'ruoyi-fastapi',
+    'database': 'GY-EP_local',
     'charset': 'utf8mb4'
 }
 
