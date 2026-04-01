@@ -89,7 +89,6 @@ def _candidate_std_name_category_map_files() -> list[Path]:
     root = _project_root_dir()
     candidates.extend(
         [
-            root / 'gz-springboot-base-dev' / 'sql' / 'spec_model_category_relink_report.csv',
             root / 'gz-python-dev' / 'sql' / 'spec_model_category_relink_report.csv',
             root / 'runtime' / 'spec_model_category_relink_report.csv',
         ]

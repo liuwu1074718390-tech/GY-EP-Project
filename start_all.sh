@@ -22,8 +22,8 @@ DB_NAME=GY-EP_local
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 PYTHON_DIR="$BASE_DIR/gz-python-dev"
 VUE_DIR="$BASE_DIR/gz-vue-base-dev"
-MATERIAL_STD_INIT_SQL="$BASE_DIR/gz-springboot-base-dev/sql/material_standard_init.sql"
-MATERIAL_PROCESS_SEGMENT_SQL="$BASE_DIR/gz-springboot-base-dev/sql/material_process_segment_upgrade_20260330.sql"
+MATERIAL_STD_INIT_SQL="$BASE_DIR/gz-python-dev/sql/material_standard_init.sql"
+MATERIAL_PROCESS_SEGMENT_SQL="$BASE_DIR/gz-python-dev/sql/material_process_segment_upgrade_20260330.sql"
 PYTHON_BIN=""
 
 # 颜色定义
