@@ -938,6 +938,7 @@ async def material_price_page(
     eq_if(payload.get('unit'), col('unit_name'), 'unit_name')
     eq_if(payload.get('priceType'), col('price_type'), 'price_type')
     eq_if(payload.get('purchaseTime'), col('purchase_time'), 'purchase_time')
+    eq_if(payload.get('standardCode'), col('standard_code'), 'standard_code')
     like_if(payload.get('sourceProject'), col('source_project'), 'source_project')
     like_if(payload.get('supplierCompany'), col('supplier_company'), 'supplier_company')
     if standard_mode:

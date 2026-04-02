@@ -565,11 +565,31 @@ const loadSuppliers = async () => {
  * @param range 区间 [min, max]
  */
 const getPriceStatusHelper = (price, range) => {
-  if (!range || range.length < 2 || range[0] === range[1]) {
+  const currentPrice = Number(price)
+  if (!Number.isFinite(currentPrice)) {
     return { icon: Minus, color: '#409eff', label: '持平', class: 'status-steady' }
   }
-  const [min, max] = range
-  const percent = (price - min) / (max - min)
+
+  if (!range || range.length < 2) {
+    return { icon: Minus, color: '#409eff', label: '持平', class: 'status-steady' }
+  }
+  const min = Number(range[0])
+  const max = Number(range[1])
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    return { icon: Minus, color: '#409eff', label: '持平', class: 'status-steady' }
+  }
+
+  if (max === min) {
+    if (currentPrice > max) {
+      return { icon: CaretTop, color: '#f56c6c', label: '偏高', class: 'status-high' }
+    } else if (currentPrice < min) {
+      return { icon: CaretBottom, color: '#67c23a', label: '偏低', class: 'status-low' }
+    }
+    return { icon: Minus, color: '#409eff', label: '持平', class: 'status-steady' }
+  }
+
+  const percent = (currentPrice - min) / (max - min)
   
   if (percent > 0.66) {
     return { icon: CaretTop, color: '#f56c6c', label: '偏高', class: 'status-high' }
@@ -896,6 +916,7 @@ const handleMaterialDetail = (row) => {
         id: row.id,
         name: row.materialName,
         spec: row.specification,
+        standardCode: row.standardCode,
         dataViewMode: filterForm.value.dataViewMode || 'NON_STANDARD'
     }
   })

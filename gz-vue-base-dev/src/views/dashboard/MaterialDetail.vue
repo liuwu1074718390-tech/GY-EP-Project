@@ -216,21 +216,39 @@ const loadData = async () => {
   if (useServerData.value) {
     try {
       let detail = null
-      const listRes = await pageMaterialPrice({
-        pageNum: 1,
-        pageSize: 1000,
-        materialName: name,
-        specification: spec,
-        dataViewMode: detailViewMode.value
-      })
-      relatedList.value = (listRes.records || []).sort((a, b) => String(b.purchaseTime || '').localeCompare(String(a.purchaseTime || '')))
-
       if (id) {
-        detail = relatedList.value.find(item => String(item.id) === String(id)) || null
+        detail = await getMaterialPriceById(id)
       }
 
-      if (!detail && id) {
-        detail = await getMaterialPriceById(id)
+      const listQuery = {
+        pageNum: 1,
+        pageSize: 1000,
+        dataViewMode: detailViewMode.value
+      }
+
+      if (detailViewMode.value === 'STANDARD') {
+        const standardCode = String(detail?.standardCode || route.query.standardCode || '').trim()
+        if (standardCode) {
+          listQuery.standardCode = standardCode
+        } else {
+          // 标准模式下缺少标准编码时，区间列表仅展示当前记录，避免混入不同编码数据
+          relatedList.value = detail ? [detail] : []
+        }
+      } else {
+        listQuery.materialName = detail?.materialName || name
+        listQuery.specification = detail?.specification || spec
+      }
+
+      if (!relatedList.value.length || detailViewMode.value !== 'STANDARD' || listQuery.standardCode) {
+        const listRes = await pageMaterialPrice(listQuery)
+        let records = listRes.records || []
+
+        if (detailViewMode.value === 'STANDARD' && listQuery.standardCode) {
+          // 前端兜底：只保留与当前标准编码一致的数据，防止异常数据混入
+          records = records.filter(item => String(item.standardCode || '').trim() === listQuery.standardCode)
+        }
+
+        relatedList.value = records.sort((a, b) => String(b.purchaseTime || '').localeCompare(String(a.purchaseTime || '')))
       }
 
       if (!detail && relatedList.value.length > 0) {

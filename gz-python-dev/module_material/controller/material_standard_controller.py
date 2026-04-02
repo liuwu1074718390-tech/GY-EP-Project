@@ -1033,7 +1033,7 @@ async def _save_spec_model(db: AsyncSession, payload: dict, is_update: bool) -> 
         raise ValueError('所属分类不存在')
     if str(linked_category.get('status') or '0') != '1':
         raise ValueError('所属分类已停用')
-    if _to_int(linked_category.get('level')) not in (1, 2, 3):
+    if _to_int(linked_category.get('level'), 0) not in (1, 2, 3):
         raise ValueError('所属分类层级非法')
     dup_sql = "SELECT COUNT(1) FROM material_std_name WHERE standard_name = :name AND del_flag = '0'"
     dup_params = {'name': standard_name}
@@ -1661,7 +1661,7 @@ async def _resolve_category_path(db: AsyncSession, linked_category_id: Any) -> t
     )
     if not linked:
         return '', '', ''
-    level = _to_int(linked.get('level'))
+    level = _to_int(linked.get('level'), 0)
     if level == 1:
         return linked.get('category_name') or '', '', ''
     if level == 2:
